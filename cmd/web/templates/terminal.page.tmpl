@@ -1,0 +1,75 @@
+{{ template "base" . }}
+
+{{ define "title" }}
+  Virtual Terminal
+{{ end }}
+
+
+{{ define "content" }}
+  <h2>The Virtual Terminal</h2>
+  <form
+    action="/payment-succeeded"
+    autocomplete="off"
+    name="charge_form"
+    id="charge_form"
+    class="d-block needs-validation charge-form"
+    novalidate=""
+  >
+
+  <div class="mb-3">
+    <label for="amount" class="form-label">Amount</label>
+    <input type="text" class="form-control"
+        id="amount" name="amount"
+        required="" autocomplete="amount-new"
+    >
+  </div>
+
+  <div class="mb-3">
+    <label for="cardholder-name" class="form-label">Cardholder Name</label>
+    <input type="text" class="form-control"
+        id="cardholder-name" name="cardholder-name"
+        required="" autocomplete="cardholder-name-new"
+    >
+  </div>
+
+  <div class="mb-3">
+    <label for="amount" class="form-label">Email</label>
+    <input type="email" class="form-control"
+        id="email" name="email"
+        required="" autocomplete="email-new"
+    >
+  </div>
+
+  <!-- card number field controlled by stripe js -->
+  <div class="mb-3">
+    <label for="card-element" class="form-label">CC Number</label>
+    <div id="card-element" class="form-control"></div>
+    <div id="card-errors" class="alert-danger text-center"></div>
+    <div id="card-success" class="alert-success text-center"></div>
+  </div>
+
+  <hr>
+
+  <a href="javascript:void(0)"
+     id="pay-button"
+     class="btn btn-primary"
+     onClick="val">Charge Card</a>
+
+  </form>
+{{ end }}
+
+
+{{ define "js" }}
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+  const stripe_key = "{{ .STRIPE_KEY }}";
+  let stripe;
+  let card;
+
+  stripe = Stripe(stripe_key);
+
+  function val(elem) {
+    console.log("called with ", stripe_key);
+  }
+  </script>
+{{ end }}
