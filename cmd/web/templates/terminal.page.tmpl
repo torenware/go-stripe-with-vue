@@ -18,7 +18,7 @@
 
   <div class="mb-3">
     <label for="amount" class="form-label">Amount</label>
-    <input type="text" class="form-control"
+    <input type="number" class="form-control dollars"
         id="amount" name="amount"
         required="" autocomplete="amount-new"
     >
@@ -53,7 +53,7 @@
   <a href="javascript:void(0)"
      id="pay-button"
      class="btn btn-primary"
-     onClick="val">Charge Card</a>
+     onClick="val()">Charge Card</a>
 
   </form>
 {{ end }}
@@ -62,7 +62,8 @@
 {{ define "js" }}
   <script src="https://js.stripe.com/v3/"></script>
   <script>
-  const stripe_key = "{{ .STRIPE_KEY }}";
+  const stripe_key = "{{ index .StringMap "STRIPE_KEY" }}";
+  console.log("SK:", stripe_key)
   let stripe;
   let card;
 
@@ -71,5 +72,34 @@
   function val(elem) {
     console.log("called with ", stripe_key);
   }
+
+    (function() {
+        // create stripe & elements
+        const elements = stripe.elements();
+        const style = {
+            base: {
+                fontSize: '16px',
+                lineHeight: '24px'
+            }
+        };
+       // create card entry
+        card = elements.create('card', {
+            style: style,
+            hidePostalCode: true,
+        });
+        card.mount("#card-element");
+
+        // check for input errors
+        card.addEventListener('change', function(event) {
+            var displayError = document.getElementById("card-errors");
+            if (event.error) {
+                displayError.classList.remove('d-none');
+                displayError.textContent = event.error.message;
+            } else {
+              displayError.classList.add('d-none');
+              displayError.textContent = '';
+            }
+        });
+    })();
   </script>
 {{ end }}

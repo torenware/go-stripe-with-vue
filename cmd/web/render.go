@@ -32,6 +32,10 @@ var functions = template.FuncMap{}
 var templateFS embed.FS
 
 func (app *application) addDefaultData(td *templateData, r *http.Request) *templateData {
+	td.StringMap = make(map[string]string)
+	app.infoLog.Printf("key: %s", app.config.stripe.key)
+	td.StringMap["STRIPE_KEY"] = app.config.stripe.key
+	td.StringMap["STRIPE_SECRET"] = app.config.stripe.secret
 	return td
 }
 

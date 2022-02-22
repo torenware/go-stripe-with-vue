@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 const version = "1.0.0"
@@ -59,6 +61,9 @@ func main() {
 	flag.StringVar(&config.api, "api", "http://localhost:4001", "Base API URI")
 
 	flag.Parse()
+
+	// https://preslav.me/2020/11/10/use-dotenv-files-when-developing-your-golang-apps/
+	godotenv.Load(".env.local")
 
 	config.stripe.key = os.Getenv("STRIPE_KEY")
 	config.stripe.secret = os.Getenv("STRIPE_SECRET")
