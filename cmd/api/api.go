@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -13,12 +12,10 @@ import (
 )
 
 const version = "1.0.0"
-const cssVersion = "1" // used for versioning assets
 
 type config struct {
 	port int
 	env  string // development | production
-	api  string // base URI
 	db   struct {
 		dsn string
 	}
@@ -30,11 +27,10 @@ type config struct {
 
 // receiver type
 type application struct {
-	config        config
-	infoLog       *log.Logger
-	errorLog      *log.Logger
-	templateCache map[string]*template.Template
-	version       string
+	config   config
+	infoLog  *log.Logger
+	errorLog *log.Logger
+	version  string
 }
 
 func (app *application) serve() error {
@@ -47,7 +43,7 @@ func (app *application) serve() error {
 		WriteTimeout:      5 * time.Second,
 	}
 
-	app.infoLog.Printf("Starting server in %s mode on port %d", app.config.env, app.config.port)
+	app.infoLog.Printf("Starting the backend server in %s mode on port %d", app.config.env, app.config.port)
 
 	return srv.ListenAndServe()
 
@@ -55,12 +51,11 @@ func (app *application) serve() error {
 
 func main() {
 	var config config
+	//var dsn string
 
-	flag.IntVar(&config.port, "port", 4000, "Port number")
+	flag.IntVar(&config.port, "port", 4001, "Port number")
 	flag.StringVar(&config.env, "env", "development", "development|production")
-	flag.StringVar(&config.api, "api", "http://localhost:4001", "Base API URI")
 	flag.StringVar(&config.db.dsn, "dsn", "", "MySQL DSN")
-
 	flag.Parse()
 
 	// https://preslav.me/2020/11/10/use-dotenv-files-when-developing-your-golang-apps/
@@ -72,14 +67,11 @@ func main() {
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	tc := make(map[string]*template.Template)
-
 	app := &application{
-		config:        config,
-		infoLog:       infoLog,
-		errorLog:      errorLog,
-		templateCache: tc,
-		version:       version,
+		config:   config,
+		infoLog:  infoLog,
+		errorLog: errorLog,
+		version:  version,
 	}
 
 	err := app.serve()
