@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/torenware/go-stripe/internal/driver"
 )
 
 const version = "1.0.0"
@@ -74,6 +75,13 @@ func main() {
 
 	tc := make(map[string]*template.Template)
 
+	conn, err := driver.OpenDB(config.db.dsn)
+	if err != nil {
+		errorLog.Fatalln(err)
+	}
+	infoLog.Println("Database is UP")
+	defer conn.Close()
+
 	app := &application{
 		config:        config,
 		infoLog:       infoLog,
@@ -82,7 +90,7 @@ func main() {
 		version:       version,
 	}
 
-	err := app.serve()
+	err = app.serve()
 	if err != nil {
 		app.errorLog.Println(err)
 		log.Fatal()

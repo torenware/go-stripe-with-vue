@@ -11,6 +11,7 @@
   <div class="alert alert-danger text-center d-none" id="card-messages"></div>
   <form
     action="/payment-succeeded"
+    method="post"
     autocomplete="off"
     name="charge_form"
     id="charge_form"
@@ -23,6 +24,7 @@
     <input type="number" class="form-control dollars"
         id="amount" name="amount"
         required="" autocomplete="amount-new"
+        step=".01"
     >
     <div class="errors text-danger d-none"></div>
   </div>
@@ -30,7 +32,7 @@
   <div class="mb-3 nval">
     <label for="cardholder-name" class="form-label">Cardholder Name</label>
     <input type="text" class="form-control"
-        id="cardholder-name" name="cardholder-name"
+        id="cardholder-name" name="cardholder_name"
         required="" autocomplete="cardholder-name-new"
     >
     <div class="errors text-danger d-none"></div>
@@ -66,6 +68,11 @@
     </div>
   </div>
 
+  <input type="hidden" id="payment_intent" name="payment_intent">
+  <input type="hidden" id="payment_method" name="payment_method">
+  <input type="hidden" id="payment_amount" name="payment_amount">
+  <input type="hidden" id="payment_currency" name="payment_currency">
+
   </form>
 {{ end }}
 
@@ -88,6 +95,24 @@
     processing.classList.remove("d-none");
   }
 
+    function showPayButtons() {
+        payButton.classList.remove("d-none");
+        processing.classList.add("d-none");
+    }
+
+   function showCardError(msg) {
+        cardMessages.classList.add("alert-danger");
+        cardMessages.classList.remove("alert-success");
+        cardMessages.classList.remove("d-none");
+        cardMessages.innerText = msg;
+    }
+
+    function showCardSuccess() {
+        cardMessages.classList.remove("alert-danger");
+        cardMessages.classList.add("alert-success");
+        cardMessages.classList.remove("d-none");
+        cardMessages.innerText = "Transaction successful";
+    }
 
 
   function setResetFunc(parent) {
@@ -118,7 +143,7 @@
           for (let elem of elems) {
             const control = elem.querySelector(":invalid");
             if (control && control.validationMessage) {
-              console.log(`${control.name}: ${control.validationMessage}`);
+              // console.log(`${control.name}: ${control.validationMessage}`);
               const errBlock = elem.querySelector(".errors");
               if (errBlock) {
                 errBlock.innerHTML = control.validationMessage;
@@ -130,7 +155,61 @@
           return;
       }
       form.classList.add("was-validated");
+
       hidePayButton();
+      let amountToCharge = String(parseFloat(document.getElementById("amount").value) * 100)
+
+      let payload = {
+          amount: amountToCharge,
+          currency: 'cad',
+      }
+
+      const requestOptions = {
+          method: 'post',
+          headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload),
+      }
+
+      fetch("http://localhost:4001/api/payment-intent", requestOptions)
+          .then(response => response.text())
+          .then(response => {
+              let data;
+              try {
+                  data = JSON.parse(response);
+                    stripe.confirmCardPayment(data.client_secret, {
+                        payment_method: {
+                            card: card,
+                            billing_details: {
+                                name: document.getElementById("cardholder-name").value,
+                            }
+                        }
+                    }).then(function(result) {
+                        if (result.error) {
+                            // card declined, or something went wrong with the card
+                            showCardError(result.error.message);
+                            showPayButtons();
+                        } else if(result.paymentIntent) {
+                            if (result.paymentIntent.status === "succeeded") {
+                                // we have charged the card
+                                document.getElementById("payment_method").value = result.paymentIntent.payment_method_types[0];
+                                document.getElementById("payment_intent").value = result.paymentIntent.id;
+                                document.getElementById("payment_amount").value = result.paymentIntent.amount;
+                                document.getElementById("payment_currency").value = result.paymentIntent.currency;
+                                processing.classList.add("d-none");
+                                showCardSuccess();
+                                document.getElementById("charge_form").submit();                            }
+                        }
+                    })
+              } catch (err) {
+                  console.log(err);
+                  console.log(response);
+                  showCardError("Invalid response from payment gateway!");
+                  showPayButtons();
+              }
+          });
   }
 
     (function() {

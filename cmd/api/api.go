@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/torenware/go-stripe/internal/driver"
 )
 
 const version = "1.0.0"
@@ -61,11 +62,25 @@ func main() {
 	// https://preslav.me/2020/11/10/use-dotenv-files-when-developing-your-golang-apps/
 	godotenv.Load(".env.local")
 
-	config.stripe.key = os.Getenv("STRIPE_KEY")
-	config.stripe.secret = os.Getenv("STRIPE_SECRET")
-
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	config.stripe.key = os.Getenv("STRIPE_KEY")
+	config.stripe.secret = os.Getenv("STRIPE_SECRET")
+	//dsn, err := driver.ConstructDSN()
+	var err error
+	dsn := os.Getenv("dsn")
+	if err != nil {
+		errorLog.Fatal(err)
+	}
+	config.db.dsn = dsn
+
+	conn, err := driver.OpenDB(config.db.dsn)
+	if err != nil {
+		errorLog.Fatalln(err)
+	}
+	infoLog.Println("Database is UP")
+	defer conn.Close()
 
 	app := &application{
 		config:   config,
@@ -74,7 +89,7 @@ func main() {
 		version:  version,
 	}
 
-	err := app.serve()
+	err = app.serve()
 	if err != nil {
 		app.errorLog.Println(err)
 		log.Fatal()

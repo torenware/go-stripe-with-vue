@@ -1,0 +1,8 @@
+{
+  "emmet.includeLanguages": {
+    "gotmpl": "html"
+  },
+  "files.associations": {
+    "*.gohtml": "gotmpl"
+  }
+}
