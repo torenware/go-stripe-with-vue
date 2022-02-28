@@ -13,7 +13,7 @@ func (app *application) VirtualTerminal(w http.ResponseWriter, r *http.Request) 
 	// stub for now
 	app.infoLog.Println("Hit VT endpoint")
 
-	if err := app.renderTemplate(w, r, "terminal", nil); err != nil {
+	if err := app.renderTemplate(w, r, "terminal", nil, "stripejs"); err != nil {
 		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 	}
@@ -46,6 +46,12 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 	if err := app.renderTemplate(w, r, "succeeded", &templateData{
 		Data: data,
 	}); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) BuyOneItem(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "buy-once", &templateData{}); err != nil {
 		app.errorLog.Println(err)
 	}
 }

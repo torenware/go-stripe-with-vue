@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"strings"
 )
 
 type templateData struct {
@@ -84,11 +83,15 @@ func (app *application) parseTemplate(partials []string, page string, templateTo
 		}
 	}
 	if len(partials) > 0 {
+		tocompile := []string{
+			templateToRender,
+		}
+		tocompile = append(tocompile, "templates/base.layout.gohtml")
+		tocompile = append(tocompile, partials...)
 		t, err =
 			template.New(fmt.Sprintf("%s.page.gohtml", page)).
 				Funcs(functions).
-				ParseFS(templateFS, "templates/base.layout.gohtml", strings.Join(partials, ","),
-					templateToRender)
+				ParseFS(templateFS, tocompile...)
 	} else {
 		t, err =
 			template.New(fmt.Sprintf("%s.page.gohtml", page)).
