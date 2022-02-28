@@ -1,6 +1,11 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/go-chi/chi/v5"
+)
 
 // The clientError helper sends a specific status code and corresponding description
 // to the user. We'll use this later in the book to send responses like 400 "Bad
@@ -13,7 +18,7 @@ func (app *application) VirtualTerminal(w http.ResponseWriter, r *http.Request) 
 	// stub for now
 	app.infoLog.Println("Hit VT endpoint")
 
-	if err := app.renderTemplate(w, r, "terminal", nil, "stripejs"); err != nil {
+	if err := app.renderTemplate(w, r, "terminal", nil, "stripejs", "stripe-form"); err != nil {
 		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 	}
@@ -51,7 +56,35 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *application) BuyOneItem(w http.ResponseWriter, r *http.Request) {
-	if err := app.renderTemplate(w, r, "buy-once", &templateData{}); err != nil {
+
+	id := chi.URLParam(r, "id")
+	widgetID, _ := strconv.Atoi(id)
+
+	type Widget struct {
+		ID    int
+		Name  string
+		Price int
+	}
+
+	widget := Widget{
+		ID:    widgetID,
+		Name:  "fake widget",
+		Price: 1000,
+	}
+
+	// widget, err := app.DB.GetWidget(widgetID)
+	// if err != nil {
+	//   app.errorLog.Println(err)
+	//   return
+	// }
+
+	data := make(map[string]interface{})
+	data["widget"] = widget
+	tdata := templateData{
+		Data: data,
+	}
+
+	if err := app.renderTemplate(w, r, "buy-once", &tdata, "stripejs", "stripe-form"); err != nil {
 		app.errorLog.Println(err)
 	}
 }

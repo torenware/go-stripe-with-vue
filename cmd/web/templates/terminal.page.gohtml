@@ -8,72 +8,8 @@
 {{ define "content" }}
   <h2 class="mt-3 text-center">The Virtual Terminal</h2>
   <hr>
-  <div class="alert alert-danger text-center d-none" id="card-messages"></div>
-  <form
-    action="/payment-succeeded"
-    method="post"
-    autocomplete="off"
-    name="charge_form"
-    id="charge_form"
-    class="d-block needs-validation charge-form"
-    novalidate=""
-  >
 
-  <div class="mb-3 nval">
-    <label for="amount" class="form-label">Amount</label>
-    <input type="number" class="form-control dollars"
-        id="amount" name="amount"
-        required="" autocomplete="amount-new"
-        step=".01"
-    >
-    <div class="errors text-danger d-none"></div>
-  </div>
-
-  <div class="mb-3 nval">
-    <label for="cardholder-name" class="form-label">Cardholder Name</label>
-    <input type="text" class="form-control"
-        id="cardholder-name" name="cardholder_name"
-        required="" autocomplete="cardholder-name-new"
-    >
-    <div class="errors text-danger d-none"></div>
-  </div>
-
-  <div class="mb-3 nval">
-    <label for="amount" class="form-label">Email</label>
-    <input type="email" class="form-control"
-        id="email" name="email"
-        required="" autocomplete="email-new"
-    >
-    <div class="errors text-danger d-none"></div>
-  </div>
-
-  <!-- card number field controlled by stripe js -->
-  <div class="mb-3">
-    <label for="card-element" class="form-label">CC Number</label>
-    <div id="card-element" class="form-control"></div>
-    <div id="card-errors" class="alert-danger text-center"></div>
-    <div id="card-success" class="alert-success text-center"></div>
-  </div>
-
-  <hr>
-
-  <a href="javascript:void(0)"
-     id="pay-button"
-     class="btn btn-primary"
-     onClick="val()">Charge Card</a>
-
-  <div id="processing-payment" class="text-center d-none">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-  </div>
-
-  <input type="hidden" id="payment_intent" name="payment_intent">
-  <input type="hidden" id="payment_method" name="payment_method">
-  <input type="hidden" id="payment_amount" name="payment_amount">
-  <input type="hidden" id="payment_currency" name="payment_currency">
-
-  </form>
+  {{ template "stripe-form" . }}
 {{ end }}
 
 

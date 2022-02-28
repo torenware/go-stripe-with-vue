@@ -8,5 +8,10 @@
 {{ define "content" }}
   <h2 class="mt-3 text-center">Widget Sale</h2>
     <img class="image-fluid rounded mx-auto d-block" src="/static/images/widget.png" alt="Yo Wadda Widget">
-
+  {{ template "stripe-form" . }}
 {{ end }}
+
+{{ define "js" }}
+  {{template "stripejs" .}}
+{{ end }}
+
