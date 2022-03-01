@@ -11,6 +11,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/torenware/go-stripe/internal/driver"
+	"github.com/torenware/go-stripe/internal/models"
 )
 
 const version = "1.0.0"
@@ -36,6 +37,7 @@ type application struct {
 	errorLog      *log.Logger
 	templateCache map[string]*template.Template
 	version       string
+	DB            models.DBModel
 }
 
 func (app *application) serve() error {

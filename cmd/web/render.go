@@ -21,7 +21,16 @@ type templateData struct {
 	CSSVersion      string
 }
 
-var functions = template.FuncMap{}
+var functions = template.FuncMap{
+	"formatCurrency": formatCurrency,
+}
+
+// Formatter for currency. Unlike the course, I do not prepend the
+// currency symbol, since I will also use this for raw float strings.
+func formatCurrency(n int) string {
+	f := float32(n / 100)
+	return fmt.Sprintf("%.2f", f)
+}
 
 // Embed the templates into the binary. This is a go 1.16 feature.
 // the "go:embed" command should be immediately after the double slashes,
@@ -35,6 +44,7 @@ func (app *application) addDefaultData(td *templateData, r *http.Request) *templ
 	app.infoLog.Printf("key: %s", app.config.stripe.key)
 	td.StringMap["STRIPE_KEY"] = app.config.stripe.key
 	td.StringMap["STRIPE_SECRET"] = app.config.stripe.secret
+	td.API = app.config.api
 	return td
 }
 

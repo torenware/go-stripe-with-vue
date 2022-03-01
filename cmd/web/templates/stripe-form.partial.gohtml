@@ -14,8 +14,8 @@
   >
 
   {{ if $widget }}
-    <p>We have a widget</p>
-    <input type="hidden" id="amount" name="amount" value="1">
+    <input type="hidden" id="product_id" name="product_id" value="{{ $widget.ID }}">
+    <input type="hidden" id="amount" name="amount" value="{{ formatCurrency $widget.Price }}">
   {{ else }}
   <div class="mb-3 nval">
     <label for="amount" class="form-label">Amount</label>

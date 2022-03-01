@@ -1,0 +1,7 @@
+development:
+  dialect: mysql
+  database: stripe_proj
+  user: stripe_test
+  password: testpw
+  host: 127.0.0.1
+  pool: 5

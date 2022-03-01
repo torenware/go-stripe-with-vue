@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/torenware/go-stripe/internal/cards"
 )
 
 // The clientError helper sends a specific status code and corresponding description
@@ -40,6 +41,25 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 	paymentAmount := r.Form.Get("payment_amount")
 	paymentCurrency := r.Form.Get("payment_currency")
 
+	card := cards.Card{
+		Secret: app.config.stripe.secret,
+		Key:    app.config.stripe.key,
+	}
+
+	pi, err := card.RetrievePaymentIntent(paymentIntent)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	pm, err := card.GetPaymentMethod(paymentMethod)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
 	data := make(map[string]interface{})
 	data["cardholder"] = cardHolder
 	data["email"] = email
@@ -47,6 +67,10 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 	data["pm"] = paymentMethod
 	data["pa"] = paymentAmount
 	data["pc"] = paymentCurrency
+	data["last_four"] = pm.Card.Last4
+	data["expiry_month"] = pm.Card.ExpMonth
+	data["expiry_year"] = pm.Card.ExpYear
+	data["bank_return_code"] = pi.Charges.Data[0].ID
 
 	if err := app.renderTemplate(w, r, "succeeded", &templateData{
 		Data: data,
@@ -59,24 +83,13 @@ func (app *application) BuyOneItem(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 	widgetID, _ := strconv.Atoi(id)
+	app.infoLog.Println("WID:", widgetID)
 
-	type Widget struct {
-		ID    int
-		Name  string
-		Price int
+	widget, err := app.DB.GetWidget(widgetID)
+	if err != nil {
+		app.errorLog.Println(err)
+		return
 	}
-
-	widget := Widget{
-		ID:    widgetID,
-		Name:  "fake widget",
-		Price: 1000,
-	}
-
-	// widget, err := app.DB.GetWidget(widgetID)
-	// if err != nil {
-	//   app.errorLog.Println(err)
-	//   return
-	// }
 
 	data := make(map[string]interface{})
 	data["widget"] = widget
