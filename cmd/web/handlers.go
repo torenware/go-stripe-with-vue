@@ -64,15 +64,27 @@ func (app *application) SaveTxn(txn models.Transaction) (int, error) {
 	return id, nil
 }
 
-func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request) {
-	app.infoLog.Println("Form submission")
+type TransactionData struct {
+	FirstName       string
+	LastName        string
+	NameOnCard      string
+	Email           string
+	PaymentIntentID string
+	PaymentMethodID string
+	PaymentAmount   int
+	PaymentCurrency string
+	LastFour        string
+	ExpiryMonth     int
+	ExpiryYear      int
+	BankReturnCode  string
+}
+
+func (app *application) GetTxnData(r *http.Request) (*TransactionData, error) {
 	err := r.ParseForm()
 	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
+		return nil, err
 	}
 
-	// read posted data
 	cardHolder := r.Form.Get("cardholder_name")
 	email := r.Form.Get("email")
 	firstName := r.Form.Get("first_name")
@@ -83,14 +95,7 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 	paymentAmount, err := strconv.Atoi(r.Form.Get("payment_amount"))
 	if err != nil {
 		app.errorLog.Println("payment amount is not an int")
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-	productID, err := strconv.Atoi(r.Form.Get("product_id"))
-	if err != nil {
-		app.errorLog.Println("payment amount is not an int")
-		app.clientError(w, http.StatusBadRequest)
-		return
+		return nil, err
 	}
 
 	card := cards.Card{
@@ -101,15 +106,13 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 	pi, err := card.RetrievePaymentIntent(paymentIntent)
 	if err != nil {
 		app.errorLog.Println(err)
-		app.clientError(w, http.StatusBadRequest)
-		return
+		return nil, err
 	}
 
 	pm, err := card.GetPaymentMethod(paymentMethod)
 	if err != nil {
 		app.errorLog.Println(err)
-		app.clientError(w, http.StatusBadRequest)
-		return
+		return nil, err
 	}
 
 	lastFour := pm.Card.Last4
@@ -117,7 +120,49 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 	expiryYear := pm.Card.ExpYear
 	bankReturnCode := pi.Charges.Data[0].ID
 
-	customerID, err := app.SaveCustomer(firstName, lastName, email)
+	// worth doing validation here...
+
+	txn := TransactionData{
+		FirstName:       firstName,
+		LastName:        lastName,
+		NameOnCard:      cardHolder,
+		Email:           email,
+		PaymentIntentID: paymentIntent,
+		PaymentMethodID: paymentMethod,
+		PaymentAmount:   paymentAmount,
+		PaymentCurrency: paymentCurrency,
+		LastFour:        lastFour,
+		ExpiryMonth:     int(expiryMonth),
+		ExpiryYear:      int(expiryYear),
+		BankReturnCode:  bankReturnCode,
+	}
+
+	return &txn, nil
+}
+
+func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request) {
+	app.infoLog.Println("Form submission")
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	txnPtr, err := app.GetTxnData(r)
+	if err != nil {
+		app.errorLog.Println("payment amount is not an int")
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	// Form was parsed in GetTxnData
+	productID, err := strconv.Atoi(r.Form.Get("product_id"))
+	if err != nil {
+		app.errorLog.Println("payment amount is not an int")
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	customerID, err := app.SaveCustomer(txnPtr.FirstName, txnPtr.LastName, txnPtr.Email)
 	if err != nil {
 		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
@@ -125,14 +170,14 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 	}
 
 	txn := models.Transaction{
-		Amount:              paymentAmount,
-		Currency:            paymentCurrency,
-		LastFour:            lastFour,
-		ExpiryMonth:         int(expiryMonth),
-		ExpiryYear:          int(expiryYear),
-		BankReturnCode:      bankReturnCode,
-		PaymentIntent:       paymentIntent,
-		PaymentMethod:       paymentMethod,
+		Amount:              txnPtr.PaymentAmount,
+		Currency:            txnPtr.PaymentCurrency,
+		LastFour:            txnPtr.LastFour,
+		ExpiryMonth:         txnPtr.ExpiryMonth,
+		ExpiryYear:          txnPtr.ExpiryYear,
+		BankReturnCode:      txnPtr.BankReturnCode,
+		PaymentIntent:       txnPtr.PaymentIntentID,
+		PaymentMethod:       txnPtr.PaymentMethodID,
 		TransactionStatusID: 2, //cleared
 	}
 
@@ -149,42 +194,48 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 		StatusID:      1, // need to check this
 		CustomerID:    customerID,
 		Quantity:      1, // fixed for the app for now
-		Amount:        paymentAmount,
+		Amount:        txnPtr.PaymentAmount,
 	}
-	orderID, err := app.SaveOrder(order)
+	// For now, we don't need to use the orderID here:
+	_, err = app.SaveOrder(order)
 	if err != nil {
 		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 
-	data := make(map[string]interface{})
-	data["cardholder"] = cardHolder
-	data["email"] = email
-	data["pi"] = paymentIntent
-	data["pm"] = paymentMethod
-	data["pa"] = paymentAmount
-	data["pc"] = paymentCurrency
-	data["last_four"] = lastFour
-	data["expiry_month"] = expiryMonth
-	data["expiry_year"] = expiryYear
-	data["bank_return_code"] = bankReturnCode
-	data["order_id"] = orderID
+	// data := make(map[string]interface{})
+	// data["cardholder"] = cardHolder
+	// data["email"] = email
+	// data["pi"] = paymentIntent
+	// data["pm"] = paymentMethod
+	// data["pa"] = paymentAmount
+	// data["pc"] = paymentCurrency
+	// data["last_four"] = lastFour
+	// data["expiry_month"] = expiryMonth
+	// data["expiry_year"] = expiryYear
+	// data["bank_return_code"] = bankReturnCode
+	// data["order_id"] = orderID
 
-	app.Session.Put(r.Context(), "receipt", data)
+	// Dereference the pointer to struct.
+	txnData := *txnPtr
+
+	app.Session.Put(r.Context(), "receipt", txnData)
 	http.Redirect(w, r, "/receipt", http.StatusSeeOther)
 
 }
 
 func (app *application) DisplayReceipt(w http.ResponseWriter, r *http.Request) {
-	data, ok := app.Session.Get(r.Context(), "receipt").(map[string]interface{})
+	txnData, ok := app.Session.Get(r.Context(), "receipt").(TransactionData)
+	app.infoLog.Println(txnData)
 	if !ok {
 		app.errorLog.Println("Could not find receipt data in session")
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
 	app.Session.Remove(r.Context(), "receipt")
-
+	data := make(map[string]interface{})
+	data["receipt"] = txnData
 	if err := app.renderTemplate(w, r, "receipt", &templateData{
 		Data: data,
 	}); err != nil {

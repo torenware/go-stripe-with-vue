@@ -63,7 +63,7 @@ func (app *application) serve() error {
 
 func main() {
 	// Allow us to pass our Data map used for templates into our session.
-	gob.Register(map[string]interface{}{})
+	gob.Register(TransactionData{})
 
 	var config config
 
