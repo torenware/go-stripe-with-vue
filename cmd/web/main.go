@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"fmt"
 	"html/template"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/joho/godotenv"
 	"github.com/torenware/go-stripe/internal/driver"
 	"github.com/torenware/go-stripe/internal/models"
@@ -16,6 +18,8 @@ import (
 
 const version = "1.0.0"
 const cssVersion = "1" // used for versioning assets
+
+var session *scs.SessionManager
 
 type config struct {
 	port int
@@ -38,6 +42,7 @@ type application struct {
 	templateCache map[string]*template.Template
 	version       string
 	DB            models.DBModel
+	Session       *scs.SessionManager
 }
 
 func (app *application) serve() error {
@@ -57,6 +62,9 @@ func (app *application) serve() error {
 }
 
 func main() {
+	// Allow us to pass our Data map used for templates into our session.
+	gob.Register(map[string]interface{}{})
+
 	var config config
 
 	flag.IntVar(&config.port, "port", 4000, "Port number")
@@ -69,13 +77,17 @@ func main() {
 	// https://preslav.me/2020/11/10/use-dotenv-files-when-developing-your-golang-apps/
 	godotenv.Load(".env.local")
 
-	config.stripe.key = os.Getenv("STRIPE_KEY")
-	config.stripe.secret = os.Getenv("STRIPE_SECRET")
-
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 
-	tc := make(map[string]*template.Template)
+	config.stripe.key = os.Getenv("STRIPE_KEY")
+	config.stripe.secret = os.Getenv("STRIPE_SECRET")
+	dsn, err := driver.ConstructDSN()
+	if err != nil {
+		errorLog.Println(err)
+		return
+	}
+	config.db.dsn = dsn
 
 	conn, err := driver.OpenDB(config.db.dsn)
 	if err != nil {
@@ -84,12 +96,19 @@ func main() {
 	infoLog.Println("Database is UP")
 	defer conn.Close()
 
+	// Initialize a new session manager and configure the session lifetime.
+	session = scs.New()
+	session.Lifetime = 24 * time.Hour
+	tc := make(map[string]*template.Template)
+
 	app := &application{
 		config:        config,
 		infoLog:       infoLog,
 		errorLog:      errorLog,
 		templateCache: tc,
 		version:       version,
+		DB:            models.DBModel{DB: conn},
+		Session:       session,
 	}
 
 	err = app.serve()

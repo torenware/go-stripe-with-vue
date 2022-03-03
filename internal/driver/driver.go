@@ -9,6 +9,14 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
+func ParseDSN(dsn string) (*mysql.Config, error) {
+	config, err := mysql.ParseDSN(dsn)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
 func ConstructDSN() (string, error) {
 
 	var host, name, acct, pw string

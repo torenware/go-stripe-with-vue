@@ -15,5 +15,6 @@
     <p>Currency: {{index .Data "pc"}}</p>
     <p>Last Four: {{index .Data "last_four"}}</p>
     <p>Card Expires: {{index .Data "expiry_month"}}/{{index .Data "expiry_year"}}</p>
+    <p>Bank Return Code: {{ index .Data "bank_return_code" }}</p>
 
 {{end}}

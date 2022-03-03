@@ -1,8 +1,6 @@
 {{ define "stripe-form" }}
   {{$widget := index .Data "widget"}}
 
-
-  <div class="alert alert-danger text-center d-none" id="card-messages"></div>
   <form
     action="/payment-succeeded"
     method="post"
@@ -30,10 +28,19 @@
 
 
   <div class="mb-3 nval">
-    <label for="cardholder-name" class="form-label">Cardholder Name</label>
+    <label for="first-name" class="form-label">First Name</label>
     <input type="text" class="form-control"
-        id="cardholder-name" name="cardholder_name"
-        required="" autocomplete="cardholder-name-new"
+        id="first-name" name="first_name"
+        required="" autocomplete="first-name-new"
+    >
+    <div class="errors text-danger d-none"></div>
+  </div>
+
+  <div class="mb-3 nval">
+    <label for="last-name" class="form-label">Last Name</label>
+    <input type="text" class="form-control"
+        id="last-name" name="last_name"
+        required="" autocomplete="last-name-new"
     >
     <div class="errors text-danger d-none"></div>
   </div>
@@ -43,6 +50,15 @@
     <input type="email" class="form-control"
         id="email" name="email"
         required="" autocomplete="email-new"
+    >
+    <div class="errors text-danger d-none"></div>
+  </div>
+
+  <div class="mb-3 nval">
+    <label for="cardholder-name" class="form-label">Cardholder Name</label>
+    <input type="text" class="form-control"
+        id="cardholder-name" name="cardholder_name"
+        required="" autocomplete="cardholder-name-new"
     >
     <div class="errors text-danger d-none"></div>
   </div>
