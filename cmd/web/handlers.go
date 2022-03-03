@@ -65,6 +65,7 @@ func (app *application) SaveTxn(txn models.Transaction) (int, error) {
 }
 
 type TransactionData struct {
+	ID              int
 	FirstName       string
 	LastName        string
 	NameOnCard      string
@@ -80,11 +81,6 @@ type TransactionData struct {
 }
 
 func (app *application) GetTxnData(r *http.Request) (*TransactionData, error) {
-	err := r.ParseForm()
-	if err != nil {
-		return nil, err
-	}
-
 	cardHolder := r.Form.Get("cardholder_name")
 	email := r.Form.Get("email")
 	firstName := r.Form.Get("first_name")
@@ -140,8 +136,7 @@ func (app *application) GetTxnData(r *http.Request) (*TransactionData, error) {
 	return &txn, nil
 }
 
-func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request) {
-	app.infoLog.Println("Form submission")
+func (app *application) VTPaymentSucceeded(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -150,14 +145,65 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 
 	txnPtr, err := app.GetTxnData(r)
 	if err != nil {
-		app.errorLog.Println("payment amount is not an int")
+		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	// Form was parsed in GetTxnData
+
+	// We save the customer but will not display this in the receipt.
+	_, err = app.SaveCustomer(txnPtr.FirstName, txnPtr.LastName, txnPtr.Email)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	txn := models.Transaction{
+		Amount:              txnPtr.PaymentAmount,
+		Currency:            txnPtr.PaymentCurrency,
+		LastFour:            txnPtr.LastFour,
+		ExpiryMonth:         txnPtr.ExpiryMonth,
+		ExpiryYear:          txnPtr.ExpiryYear,
+		BankReturnCode:      txnPtr.BankReturnCode,
+		PaymentIntent:       txnPtr.PaymentIntentID,
+		PaymentMethod:       txnPtr.PaymentMethodID,
+		TransactionStatusID: 2, //cleared
+	}
+
+	txnID, err := app.SaveTxn(txn)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	txnPtr.ID = txnID
+
+	// We are done with the DB, since there is no Order in this case.
+
+	// Dereference the pointer to struct.
+	txnData := *txnPtr
+
+	app.Session.Put(r.Context(), "receipt", txnData)
+	http.Redirect(w, r, "/receipt", http.StatusSeeOther)
+
+}
+
+func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	txnPtr, err := app.GetTxnData(r)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
 	productID, err := strconv.Atoi(r.Form.Get("product_id"))
 	if err != nil {
-		app.errorLog.Println("payment amount is not an int")
+		app.errorLog.Println("widget_id is not an int")
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
@@ -187,6 +233,7 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
+	txnPtr.ID = txnID
 
 	order := models.Order{
 		WidgetID:      productID,
@@ -203,19 +250,6 @@ func (app *application) PaymentSucceeded(w http.ResponseWriter, r *http.Request)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-
-	// data := make(map[string]interface{})
-	// data["cardholder"] = cardHolder
-	// data["email"] = email
-	// data["pi"] = paymentIntent
-	// data["pm"] = paymentMethod
-	// data["pa"] = paymentAmount
-	// data["pc"] = paymentCurrency
-	// data["last_four"] = lastFour
-	// data["expiry_month"] = expiryMonth
-	// data["expiry_year"] = expiryYear
-	// data["bank_return_code"] = bankReturnCode
-	// data["order_id"] = orderID
 
 	// Dereference the pointer to struct.
 	txnData := *txnPtr

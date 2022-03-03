@@ -1,8 +1,12 @@
 {{ define "stripe-form" }}
+  {{ $action := "/payment-succeeded" }}
   {{$widget := index .Data "widget"}}
+  {{ if not $widget }}
+    {{$action = "/vterm-payment-succeeded" }}
+  {{ end }}
 
   <form
-    action="/payment-succeeded"
+    action="{{ $action }}"
     method="post"
     autocomplete="off"
     name="charge_form"

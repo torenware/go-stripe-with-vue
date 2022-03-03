@@ -28,7 +28,7 @@ var functions = template.FuncMap{
 // Formatter for currency. Unlike the course, I do not prepend the
 // currency symbol, since I will also use this for raw float strings.
 func formatCurrency(n int) string {
-	f := float32(n / 100)
+	f := float32(n) / float32(100)
 	return fmt.Sprintf("%.2f", f)
 }
 
