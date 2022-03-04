@@ -20,6 +20,20 @@ type jsonResponse struct {
 	ID      int    `json:"id,omitempty"`
 }
 
+// let payload = {
+// 	plan: '{{$widget.PlanID}}',
+// 	payment_method: result.paymentMethod.id,
+// 	email: document.getElementById("email").value,
+// 	last_four: result.paymentMethod.card.last4,
+//   };
+
+type subscriptionPayload struct {
+	PlanID        string `json:"plan"`
+	PaymentMethod string `json:"payment_method"`
+	Email         string `json:"email"`
+	LastFour      string `json:"last_four"`
+}
+
 func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request) {
 	var payload stripePayload
 
@@ -76,5 +90,33 @@ func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(out)
 	}
+
+}
+
+func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Request) {
+	var payload subscriptionPayload
+
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		app.errorLog.Println(err)
+		return
+	}
+
+	test, err := json.MarshalIndent(payload, "", "    ")
+	app.infoLog.Println(string(test))
+
+	// stub
+	j := jsonResponse{
+		OK:      true,
+		Message: "Pong",
+	}
+	out, err := json.MarshalIndent(j, "", "  ")
+	if err != nil {
+		app.errorLog.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(out)
 
 }

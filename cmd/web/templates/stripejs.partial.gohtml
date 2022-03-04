@@ -88,48 +88,45 @@
       let amountToCharge = String(Math.round(parseFloat(document.getElementById("amount").value) * 100))
 
     {{ if $recurring }}
-       console.log("TBD: subscription call to BE");
 
        stripe.createPaymentMethod({
          type: "card",
          card: card,
-         billing_details {
+         billing_details: {
           email: document.getElementById("email").value
          }
        }).then(stripePaymentMethodHandler);
 
        function stripePaymentMethodHandler(rslt) {
-          if (result.error) {
-            showCardError(result.error.message);
+          if (rslt.error) {
+            showCardError(rslt.error.message);
           } else {
             // create customer and subscribe.
             let payload = {
               plan: '{{$widget.PlanID}}',
-              payment_method: result.paymentMethod.id,
+              payment_method: rslt.paymentMethod.id,
               email: document.getElementById("email").value,
-              last_four: result.paymentMethod.card.last4,
+              last_four: rslt.paymentMethod.card.last4,
             };
+            const requestOptions = {
+                  method: 'post',
+                  headers: {
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify(payload),
+              };
+
+              fetch("{{ .API }}/api/create-customer-and-subscribe-to-plan", requestOptions)
+                  .then(response => response.json())
+                  .then(function(data) {
+                    console.log(data);
+                    processing.classList.add("d-none");
+                    // set hidden inputs from reply
+                    // submit the form.
+                  });
           }
        }
-
-       const requestOptions = {
-            method: 'post',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload),
-        };
-
-        fetch("{{ .API }}/api/create-customer-and-subscribe-to-plan", requestOptions)
-            .then(response => response.json())
-            .then(function(data) {
-              console.log(data);
-              processing.classList.add("d-none");
-              // set hidden inputs from reply
-              // submit the form.
-            })
-
 
 
     {{ else }}
