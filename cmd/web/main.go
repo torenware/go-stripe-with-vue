@@ -70,7 +70,7 @@ func main() {
 	flag.IntVar(&config.port, "port", 4000, "Port number")
 	flag.StringVar(&config.env, "env", "development", "development|production")
 	flag.StringVar(&config.api, "api", "http://localhost:4001", "Base API URI")
-	flag.StringVar(&config.db.dsn, "dsn", "", "MySQL DSN")
+	// flag.StringVar(&config.db.dsn, "dsn", "", "MySQL DSN")
 
 	flag.Parse()
 

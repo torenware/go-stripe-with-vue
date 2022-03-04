@@ -58,7 +58,6 @@ func main() {
 
 	flag.IntVar(&config.port, "port", 4001, "Port number")
 	flag.StringVar(&config.env, "env", "development", "development|production")
-	flag.StringVar(&config.db.dsn, "dsn", "", "MySQL DSN")
 	flag.Parse()
 
 	// https://preslav.me/2020/11/10/use-dotenv-files-when-developing-your-golang-apps/
@@ -71,9 +70,10 @@ func main() {
 	config.stripe.secret = os.Getenv("STRIPE_SECRET")
 	//dsn, err := driver.ConstructDSN()
 	var err error
-	dsn := os.Getenv("dsn")
+	dsn, err := driver.ConstructDSN()
 	if err != nil {
-		errorLog.Fatal(err)
+		errorLog.Println(err)
+		return
 	}
 	config.db.dsn = dsn
 	infoLog.Println("dsn", dsn)

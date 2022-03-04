@@ -85,7 +85,7 @@
       form.classList.add("was-validated");
 
       hidePayButton();
-      let amountToCharge = String(Math.round(parseFloat(document.getElementById("amount").value) * 100))
+      let amountToCharge = Math.round(parseFloat(document.getElementById("amount").value) * 100)
 
     {{ if $recurring }}
 
@@ -103,10 +103,18 @@
           } else {
             // create customer and subscribe.
             let payload = {
+              product_id:  document.getElementById("product_id").value,
               plan: '{{$widget.PlanID}}',
               payment_method: rslt.paymentMethod.id,
               email: document.getElementById("email").value,
               last_four: rslt.paymentMethod.card.last4,
+              card_brand: rslt.paymentMethod.card.brand,
+              exp_month: rslt.paymentMethod.card.exp_month,
+              exp_year: rslt.paymentMethod.card.exp_year,
+              first_name: document.getElementById("first-name").value,
+              last_name: document.getElementById("last-name").value,
+              amount: amountToCharge,
+              currency: "cad", // Put into widget table
             };
             const requestOptions = {
                   method: 'post',
@@ -130,7 +138,6 @@
 
 
     {{ else }}
-        console.log("execute PI path");
         let payload = {
             amount: amountToCharge,
             currency: 'cad',
@@ -186,11 +193,8 @@
     {{end}}
           }
 
-    console.log("passed alternative procs");
-
 
     (function() {
-        console.log("called sinit");
         // create stripe & elements
         const elements = stripe.elements();
         const style = {

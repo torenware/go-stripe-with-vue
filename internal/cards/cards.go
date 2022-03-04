@@ -89,7 +89,7 @@ func (c *Card) CreateCustomer(pm, email string) (*stripe.Customer, string, error
 }
 
 // SubscribeCustomer returns a subscription ID for a customer on a given plan.
-func (c *Card) SubscribeCustomer(cust *stripe.Customer, plan, email, last4, cardType string) (string, error) {
+func (c *Card) SubscribeCustomer(cust *stripe.Customer, plan, email, last4, cardType string) (*stripe.Subscription, error) {
 	stripeCustomerID := cust.ID
 	items := []*stripe.SubscriptionItemsParams{
 		{Plan: stripe.String(plan)},
@@ -103,9 +103,9 @@ func (c *Card) SubscribeCustomer(cust *stripe.Customer, plan, email, last4, card
 	params.AddExpand("latest_invoice.payment_intent")
 	subscription, err := sub.New(params)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return subscription.ID, nil
+	return subscription, nil
 }
 
 func cardErrorMessage(code stripe.ErrorCode) string {
