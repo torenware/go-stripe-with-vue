@@ -28,6 +28,7 @@ type jsonResponse struct {
 //   };
 
 type subscriptionPayload struct {
+	stripePayload
 	PlanID        string `json:"plan"`
 	PaymentMethod string `json:"payment_method"`
 	Email         string `json:"email"`
@@ -102,8 +103,26 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	test, err := json.MarshalIndent(payload, "", "    ")
-	app.infoLog.Println(string(test))
+	debug, _ := json.MarshalIndent(payload, "", "    ")
+	app.infoLog.Println(string(debug))
+
+	card := cards.Card{
+		Secret:   app.config.stripe.secret,
+		Key:      app.config.stripe.key,
+		Currency: payload.Currency,
+	}
+
+	cust, msg, err := card.CreateCustomer(payload.PaymentMethod, payload.Email)
+	if err != nil {
+		app.errorLog.Println(msg, err)
+		return
+	}
+	subscriptionID, err := card.SubscribeCustomer(cust, payload.PlanID, payload.Email, payload.LastFour, "")
+	if err != nil {
+		app.errorLog.Println(msg, err)
+		return
+	}
+	app.infoLog.Println("subID is", subscriptionID)
 
 	// stub
 	j := jsonResponse{
