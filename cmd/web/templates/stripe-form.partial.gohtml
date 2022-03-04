@@ -1,7 +1,14 @@
 {{ define "stripe-form" }}
   {{ $action := "/payment-succeeded" }}
+
   {{$widget := index .Data "widget"}}
-  {{ if not $widget }}
+  {{ if $widget }}
+     {{ if $widget.IsRecurring }}
+      {{$action = "/subscription-succeeded" }}
+     {{ else }}
+       {{ $action = "/payment-succeeded" }}
+     {{ end }}
+  {{ else if not $widget }}
     {{$action = "/vterm-payment-succeeded" }}
   {{ end }}
 

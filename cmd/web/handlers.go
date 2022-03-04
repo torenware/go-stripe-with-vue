@@ -310,3 +310,20 @@ func (app *application) BuyOneItem(w http.ResponseWriter, r *http.Request) {
 		app.errorLog.Println(err)
 	}
 }
+
+func (app *application) BronzePlan(w http.ResponseWriter, r *http.Request) {
+	widget, err := app.DB.GetWidget(2) // bronze plan
+	if err != nil {
+		app.errorLog.Println(err)
+		return
+	}
+	data := make(map[string]interface{})
+	data["widget"] = widget
+	tdata := templateData{
+		Data: data,
+	}
+
+	if err := app.renderTemplate(w, r, "bronze", &tdata, "stripe-form", "stripejs"); err != nil {
+		app.errorLog.Println(err)
+	}
+}

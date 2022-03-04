@@ -1,0 +1,18 @@
+{{template "base" . }}
+
+{{define "title"}}
+    Subscribe To Bronze
+{{end}}
+
+{{define "content"}}
+<h2>Subscribe to the Widgets Bronze Plan</h2>
+<hr>
+
+  {{ template "stripe-form" . }}
+
+{{ end }}
+
+{{ define "js" }}
+  {{template "stripejs" .}}
+{{ end }}
+
