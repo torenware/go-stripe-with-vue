@@ -1,0 +1,34 @@
+{{template "base" . }}
+
+{{define "title"}}
+    You are subscribed!
+{{end}}
+
+{{define "content"}}
+    <h2 class="mt-5">Subscription Created</h2>
+    <hr>
+    <p>Name: <span id="first_name"></span> <span id="last_name"></span></p>
+    <p>Card: <span id="card_brand"></span> x<span id="last_four"></span> </p>
+    <p>For: <span id="item"></span></p>
+    <p>Description: <span id="description"></span></p>
+
+{{end}}
+
+{{ define "js"}}
+
+<script>
+const ids = ["first_name", "last_name", "card_brand", "last_four", "item", "description"];
+if (sessionStorage.first_name) {
+  for (let id of ids) {
+    const val = sessionStorage.getItem(id);
+    document.getElementById(id).innerText = val;
+  }
+  sessionStorage.clear();
+
+} else {
+  location.href = "/";
+}
+
+</script>
+
+{{end}}

@@ -20,6 +20,7 @@ func (app *application) routes() http.Handler {
 	mux.Get("/test-widget", app.TestGetWidget)
 
 	mux.Get("/plans/bronze", app.BronzePlan)
+	mux.Get("/receipt/bronze", app.ReceiptBronze)
 
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))

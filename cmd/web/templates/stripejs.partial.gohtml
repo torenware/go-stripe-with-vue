@@ -130,8 +130,17 @@
                   .then(function(data) {
                     console.log(data);
                     processing.classList.add("d-none");
-                    // set hidden inputs from reply
-                    // submit the form.
+
+                    // Stuff our data into session_storage
+                    sessionStorage.setItem("first_name", payload.first_name)
+                    sessionStorage.setItem("last_name", payload.last_name)
+                    sessionStorage.setItem("amount", "${{ formatCurrency $widget.Price }}")
+                    sessionStorage.setItem("last_four", payload.last_four)
+                    sessionStorage.setItem("card_brand", payload.card_brand)
+                    sessionStorage.setItem("item", "{{$widget.Name}}")
+                    sessionStorage.setItem("description", "{{$widget.Description}}")
+
+                    location.href = "/receipt/bronze";
                   });
           }
        }
