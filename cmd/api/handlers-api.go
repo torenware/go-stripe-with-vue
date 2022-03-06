@@ -11,6 +11,10 @@ import (
 	"github.com/torenware/go-stripe/internal/models"
 )
 
+const (
+	AuthTokenTTL = 25 * time.Hour
+)
+
 type stripePayload struct {
 	Currency      string `json:"currency"`
 	Amount        int    `json:"amount"`
@@ -252,11 +256,17 @@ func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	// Now generate our token
-	token, err := models.GenerateToken(user.ID, 25*time.Hour, models.ScopeAuthentication)
+	token, err := models.GenerateToken(user.ID, AuthTokenTTL, models.ScopeAuthentication)
 	if err != nil {
 		app.errorLog.Println(err)
 		app.badRequest(w, r, err)
 		return
+	}
+
+	err = app.DB.InsertToken(token, user)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.badRequest(w, r, err)
 	}
 
 	var payload struct {
@@ -273,4 +283,35 @@ func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		app.errorLog.Println(err)
 	}
+}
+
+func (app *application) CheckAuthentication(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Error      bool   `json:"error"`
+		Message    string `json:"message"`
+		Authorized bool   `json:"authorized"`
+	}
+
+	authHdr := r.Header.Get("Authorization")
+	prefixLen := len("Bearer ")
+
+	if authHdr[:prefixLen] == "Bearer " {
+		token := authHdr[prefixLen:]
+		email, err := app.DB.GetEmailFromToken(token, AuthTokenTTL)
+		if err != nil {
+			if err.Error() != "token expired" {
+				app.errorLog.Println(err)
+				payload.Error = true
+			}
+			_ = app.writeJSON(w, http.StatusUnauthorized, payload)
+			return
+		}
+		payload.Authorized = true
+		payload.Message = fmt.Sprintf("Authorized for %s", email)
+		_ = app.writeJSON(w, http.StatusOK, payload)
+		return
+	}
+	payload.Message = "no token supplied"
+	_ = app.writeJSON(w, http.StatusUnauthorized, payload)
+
 }

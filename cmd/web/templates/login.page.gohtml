@@ -55,7 +55,7 @@
 
 {{ define "js" }}
 <script>
-
+  const loginMessages = document.getElementById("card-messages");
   function setResetFunc(parent) {
      const rFunc = function(evt) {
        const errBlock = parent.querySelector(".errors");
@@ -72,22 +72,21 @@
   }
 
    function showLoginError(msg) {
-        cardMessages.classList.add("alert-danger");
-        cardMessages.classList.remove("alert-success");
-        cardMessages.classList.remove("d-none");
-        cardMessages.innerText = msg;
+        loginMessages.classList.add("alert-danger");
+        loginMessages.classList.remove("alert-success");
+        loginMessages.classList.remove("d-none");
+        loginMessages.innerText = msg;
     }
 
-    function showLoginSuccess() {
-        cardMessages.classList.remove("alert-danger");
-        cardMessages.classList.add("alert-success");
-        cardMessages.classList.remove("d-none");
-        cardMessages.innerText = "Welcome!";
+    function showLoginSuccess(msg="Welcome!") {
+        loginMessages.classList.remove("alert-danger");
+        loginMessages.classList.add("alert-success");
+        loginMessages.classList.remove("d-none");
+        loginMessages.innerText = msg;
     }
 
 
 function val() {
-  console.log("Login invoked");
   let form = document.getElementById("login_form");
   if (form.checkValidity() === false) {
       this.event.preventDefault();
@@ -124,11 +123,22 @@ const requestOptions = {
       body: JSON.stringify(payload),
   }
 
-  console.log("call fetch");
    fetch("{{.API}}/api/authenticate", requestOptions)
     .then(response => response.json())
     .then(response => {
-        console.log(response);
+        if(!response.error) {
+          if (response.authentication_token) {
+            // const {token, expiry} = response.authentication_token;
+            // localStorage.setItem("token", token);
+            // localStorage.setItem("expiry", expiry)
+            showLoginSuccess();
+            loginUserToSite(response.authentication_token);
+
+          }
+        } else {
+          ShowError(response.message);
+        }
+
     });
 }
 </script>
