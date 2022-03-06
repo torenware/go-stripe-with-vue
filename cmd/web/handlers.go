@@ -333,3 +333,10 @@ func (app *application) ReceiptBronze(w http.ResponseWriter, r *http.Request) {
 		app.errorLog.Println(err)
 	}
 }
+
+// Authentication
+func (app *application) LoginPage(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "login", nil); err != nil {
+		app.errorLog.Println(err)
+	}
+}

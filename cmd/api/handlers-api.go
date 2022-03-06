@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -218,4 +219,58 @@ func (app *application) SaveTxn(txn models.Transaction) (int, error) {
 		return 0, err
 	}
 	return id, nil
+}
+
+// Authentication
+
+func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) {
+	var userInput struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	err := app.readJSON(w, r, &userInput)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	// See if we have such a user
+	user, err := app.DB.GetUserByEmail(userInput.Email)
+	if err != nil {
+		app.invalidCredentials(w)
+		return
+	}
+	matches, err := app.passwordsMatch(user.Password, userInput.Password)
+	if err != nil {
+		// Exceptional case
+		app.errorLog.Println(err)
+		return
+	}
+	if !matches {
+		app.invalidCredentials(w)
+		return
+	}
+	// Now generate our token
+	token, err := models.GenerateToken(user.ID, 25*time.Hour, models.ScopeAuthentication)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.badRequest(w, r, err)
+		return
+	}
+
+	var payload struct {
+		Error   bool          `json:"error"`
+		Message string        `json:"message"`
+		Token   *models.Token `json:"authentication_token"`
+	}
+
+	payload.Error = false
+	payload.Message = fmt.Sprintf("token for %s created", userInput.Email)
+	payload.Token = token
+
+	err = app.writeJSON(w, http.StatusOK, payload)
+	if err != nil {
+		app.errorLog.Println(err)
+	}
 }

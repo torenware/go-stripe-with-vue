@@ -1,0 +1,136 @@
+{{template "base" . }}
+
+{{define "title"}}
+    Login Page
+{{end}}
+
+{{define "content"}}
+<h2>Login to the Site</h2>
+<hr>
+  <form
+    action=""
+    method="post"
+    autocomplete="off"
+    name="login_form"
+    id="login_form"
+    class="d-block needs-validation"
+    novalidate=""
+  >
+
+  <div class="mb-3 nval">
+    <label for="email" class="form-label">Email</label>
+    <input type="email" class="form-control"
+        id="email" name="email"
+        required="" autocomplete="email-new"
+    >
+    <div class="errors text-danger d-none"></div>
+  </div>
+
+  <div class="mb-3 nval">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" class="form-control"
+        id="password" name="password"
+        required="" autocomplete="password-new"
+    >
+    <div class="errors text-danger d-none"></div>
+  </div>
+
+  <hr>
+
+  <a href="javascript:void(0)"
+     id="login-button"
+     class="btn btn-primary"
+     onClick="val()">Login</a>
+
+  <div id="logging-in" class="text-center d-none">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  </form>
+
+
+{{ end }}
+
+{{ define "js" }}
+<script>
+
+  function setResetFunc(parent) {
+     const rFunc = function(evt) {
+       const errBlock = parent.querySelector(".errors");
+       if (errBlock) {
+         if (evt.target.validationMessage) {
+           errBlock.innerText = evt.target.validationMessage;
+         }
+         else {
+           errBlock.classList.add("d-none");
+         }
+       }
+     }
+     return rFunc;
+  }
+
+   function showLoginError(msg) {
+        cardMessages.classList.add("alert-danger");
+        cardMessages.classList.remove("alert-success");
+        cardMessages.classList.remove("d-none");
+        cardMessages.innerText = msg;
+    }
+
+    function showLoginSuccess() {
+        cardMessages.classList.remove("alert-danger");
+        cardMessages.classList.add("alert-success");
+        cardMessages.classList.remove("d-none");
+        cardMessages.innerText = "Welcome!";
+    }
+
+
+function val() {
+  console.log("Login invoked");
+  let form = document.getElementById("login_form");
+  if (form.checkValidity() === false) {
+      this.event.preventDefault();
+      this.event.stopPropagation();
+      form.classList.add("was-validated");
+      const elems = form.querySelectorAll("div.nval");
+      for (let elem of elems) {
+        const control = elem.querySelector(":invalid");
+        if (control && control.validationMessage) {
+          const errBlock = elem.querySelector(".errors");
+          if (errBlock) {
+            errBlock.innerText = control.validationMessage;
+            errBlock.classList.remove("d-none");
+            control.onchange = setResetFunc(elem);
+          }
+        }
+      }
+      return;
+  }
+  form.classList.add("was-validated");
+
+
+const payload = {
+  email: document.getElementById("email").value,
+  password: document.getElementById("password").value
+};
+
+const requestOptions = {
+      method: 'post',
+      headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+  }
+
+  console.log("call fetch");
+   fetch("{{.API}}/api/authenticate", requestOptions)
+    .then(response => response.json())
+    .then(response => {
+        console.log(response);
+    });
+}
+</script>
+{{ end }}
+
