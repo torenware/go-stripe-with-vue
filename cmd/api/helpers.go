@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/torenware/go-stripe/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -91,4 +92,23 @@ func (app *application) passwordsMatch(hash, offeredPW string) (bool, error) {
 		return false, err
 	}
 	return true, nil
+}
+
+func (app *application) getAuthenticatedUser(r *http.Request) (*models.User, error) {
+	authHdr := r.Header.Get("Authorization")
+	prefixLen := len("Bearer ")
+
+	if authHdr[:prefixLen] == "Bearer " {
+		token := authHdr[prefixLen:]
+		user, err := app.DB.GetUserFromToken(token, AuthTokenTTL)
+		if err != nil {
+			if err.Error() != "token expired" {
+				app.errorLog.Println(err)
+				return nil, err
+			}
+			return nil, nil
+		}
+		return user, nil
+	}
+	return nil, errors.New("must supply auth header")
 }

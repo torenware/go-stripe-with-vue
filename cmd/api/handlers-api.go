@@ -297,7 +297,7 @@ func (app *application) CheckAuthentication(w http.ResponseWriter, r *http.Reque
 
 	if authHdr[:prefixLen] == "Bearer " {
 		token := authHdr[prefixLen:]
-		email, err := app.DB.GetEmailFromToken(token, AuthTokenTTL)
+		user, err := app.DB.GetUserFromToken(token, AuthTokenTTL)
 		if err != nil {
 			if err.Error() != "token expired" {
 				app.errorLog.Println(err)
@@ -307,11 +307,74 @@ func (app *application) CheckAuthentication(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		payload.Authorized = true
-		payload.Message = fmt.Sprintf("Authorized for %s", email)
+		payload.Message = fmt.Sprintf("Authorized for %s", user.Email)
 		_ = app.writeJSON(w, http.StatusOK, payload)
 		return
 	}
 	payload.Message = "no token supplied"
 	_ = app.writeJSON(w, http.StatusUnauthorized, payload)
 
+}
+
+func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Request) {
+	var txnData struct {
+		PaymentAmount   int    `json:"payment_amount"`
+		PaymentCurrency string `json:"payment_currency"`
+		FirstName       string `json:"first_name"`
+		LastName        string `json:"last_name"`
+		PaymentIntent   string `json:"payment_intent"`
+		PaymentMethod   string `json:"payment_method"`
+		ExpiryMonth     int    `json:"expiry_month"`
+		ExpiryYear      int    `json:"expiry_year"`
+		LastFour        string `json:"last_four"`
+		BankReturnCode  string `json:"bank_return_code"`
+	}
+
+	err := app.readJSON(w, r, &txnData)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	card := cards.Card{
+		Secret: app.config.stripe.secret,
+		Key:    app.config.stripe.key,
+	}
+
+	pi, err := card.RetrievePaymentIntent(txnData.PaymentIntent)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	pm, err := card.GetPaymentMethod(txnData.PaymentMethod)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	txnData.LastFour = pm.Card.Last4
+	txnData.ExpiryMonth = int(pm.Card.ExpMonth)
+	txnData.ExpiryYear = int(pm.Card.ExpYear)
+	txnData.BankReturnCode = pi.Charges.Data[0].ID
+
+	txn := models.Transaction{
+		Amount:              txnData.PaymentAmount,
+		Currency:            txnData.PaymentCurrency,
+		LastFour:            txnData.LastFour,
+		ExpiryMonth:         txnData.ExpiryMonth,
+		ExpiryYear:          txnData.ExpiryYear,
+		BankReturnCode:      txnData.BankReturnCode,
+		PaymentIntent:       txnData.PaymentIntent,
+		PaymentMethod:       txnData.PaymentMethod,
+		TransactionStatusID: 2,
+	}
+
+	_, err = app.SaveTxn(txn)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	app.writeJSON(w, http.StatusOK, txn)
 }

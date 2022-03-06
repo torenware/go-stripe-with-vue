@@ -82,6 +82,42 @@ func CreateTokenHash(token string) []byte {
 	return hash[:]
 }
 
+func (m *DBModel) GetUserFromToken(token string, ttl time.Duration) (*User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	hash := CreateTokenHash(token)
+	var created time.Time
+	var u User
+
+	query := `
+		select
+			u.id, u. u.first_name, u.last_name,
+			u.email, t.created_at
+		from users u
+		inner join tokens t on t.user_id = u.id
+		where t.token_hash = ?
+	`
+	row := m.DB.QueryRowContext(ctx, query, hash)
+	err := row.Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Email,
+		&created,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	expired := created.Add(ttl)
+	if expired.Before(time.Now()) {
+		return nil, errors.New("token expired")
+	}
+	return &u, nil
+}
+
 func (m *DBModel) GetEmailFromToken(token string, ttl time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

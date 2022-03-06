@@ -24,5 +24,12 @@ func (app *application) routes() http.Handler {
 	mux.Post("/api/authenticate", app.CreateAuthToken)
 	mux.Post("/api/is-authenticated", app.CheckAuthentication)
 
-	return mux
+	// To apply an auth middleware on a group of routes, we use the Router
+	// method to create a sub-router
+
+	return mux.Route("/api/auth", func(mux chi.Router) {
+		mux.Use(app.AuthHandler)
+
+		mux.Get("/vterm-success-handler", app.VTermSuccessHandler)
+	})
 }
