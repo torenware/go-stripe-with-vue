@@ -42,7 +42,7 @@
             </ul>
           </li>
           <li id="vt-term" class="nav-item d-none">
-            <a class="nav-link" href="/virtual-terminal">Virtual Terminal</a>
+            <a class="nav-link" href="/admin/virtual-terminal">Virtual Terminal</a>
           </li>
         </ul>
         <ul class="navbar-nav mb-auto mb-2 mb-lg-0">
@@ -94,7 +94,7 @@
       localStorage.setItem("token", auth_obj.token);
       localStorage.setItem("expiry", auth_obj.expiry);
       updateMenusOnLoad();
-      location.href = "/";
+      // location.href = "/";
     }
 
     function getTokenData() {
@@ -146,7 +146,7 @@
     function logoutUser() {
       localStorage.removeItem("token");
       localStorage.removeItem("expiry");
-      location.href = "/";
+      location.href = "/logout";
     }
   </script>
 

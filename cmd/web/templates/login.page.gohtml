@@ -8,7 +8,7 @@
 <h2>Login to the Site</h2>
 <hr>
   <form
-    action=""
+    action="/process-login"
     method="post"
     autocomplete="off"
     name="login_form"
@@ -128,12 +128,9 @@ const requestOptions = {
     .then(response => {
         if(!response.error) {
           if (response.authentication_token) {
-            // const {token, expiry} = response.authentication_token;
-            // localStorage.setItem("token", token);
-            // localStorage.setItem("expiry", expiry)
             showLoginSuccess();
             loginUserToSite(response.authentication_token);
-
+            document.getElementById("login_form").submit();
           }
         } else {
           ShowError(response.message);

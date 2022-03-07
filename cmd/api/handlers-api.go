@@ -273,11 +273,13 @@ func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) 
 		Error   bool          `json:"error"`
 		Message string        `json:"message"`
 		Token   *models.Token `json:"authentication_token"`
+		UserID  int           `json:"user_id,omitempty"`
 	}
 
 	payload.Error = false
 	payload.Message = fmt.Sprintf("token for %s created", userInput.Email)
 	payload.Token = token
+	payload.UserID = user.ID
 
 	err = app.writeJSON(w, http.StatusOK, payload)
 	if err != nil {

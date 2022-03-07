@@ -340,3 +340,29 @@ func (app *application) LoginPage(w http.ResponseWriter, r *http.Request) {
 		app.errorLog.Println(err)
 	}
 }
+
+func (app *application) ProcessLogin(w http.ResponseWriter, r *http.Request) {
+	session.RenewToken(r.Context()) // best practice
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	email := r.Form.Get("email")
+	password := r.Form.Get("password")
+
+	uid, err := app.DB.Authenticate(email, password)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	session.Put(r.Context(), "userID", uid)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (app *application) Logout(w http.ResponseWriter, r *http.Request) {
+	session.Destroy(r.Context())
+	session.RenewToken(r.Context())
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
