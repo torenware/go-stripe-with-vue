@@ -332,6 +332,7 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 
 	err := app.readJSON(w, r, &txnData)
 	if err != nil {
+		app.errorLog.Println("RJ", err)
 		app.badRequest(w, r, err)
 		return
 	}
@@ -343,12 +344,14 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 
 	pi, err := card.RetrievePaymentIntent(txnData.PaymentIntent)
 	if err != nil {
+		app.errorLog.Println("RPI", err)
 		app.badRequest(w, r, err)
 		return
 	}
 
 	pm, err := card.GetPaymentMethod(txnData.PaymentMethod)
 	if err != nil {
+		app.errorLog.Println("GPM", err)
 		app.badRequest(w, r, err)
 		return
 	}
@@ -370,11 +373,12 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 		TransactionStatusID: 2,
 	}
 
-	_, err = app.SaveTxn(txn)
+	id, err := app.SaveTxn(txn)
 	if err != nil {
+		app.errorLog.Println("STX", err)
 		app.badRequest(w, r, err)
 		return
 	}
-
+	txn.ID = id
 	app.writeJSON(w, http.StatusOK, txn)
 }

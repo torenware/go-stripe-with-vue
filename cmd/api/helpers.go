@@ -98,7 +98,7 @@ func (app *application) getAuthenticatedUser(r *http.Request) (*models.User, err
 	authHdr := r.Header.Get("Authorization")
 	prefixLen := len("Bearer ")
 
-	if authHdr[:prefixLen] == "Bearer " {
+	if len(authHdr) > 0 && authHdr[:prefixLen] == "Bearer " {
 		token := authHdr[prefixLen:]
 		user, err := app.DB.GetUserFromToken(token, AuthTokenTTL)
 		if err != nil {

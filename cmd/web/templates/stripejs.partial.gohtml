@@ -43,6 +43,46 @@
         cardMessages.innerText = "Transaction successful";
     }
 
+  {{ if not $widget }}
+    async function completeVTTransaction(result) {
+      const payload = {
+        payment_method: result.paymentIntent.payment_method,
+        payment_intent: result.paymentIntent.id,
+        payment_amount: result.paymentIntent.amount,
+        payment_currency: result.paymentIntent.currency,
+      };
+
+      const headers = new Headers();
+      const { token } = getTokenData();
+      headers.append("Accept", "application/json");
+      headers.append("Content-Type", "application/json");
+      headers.append("Authorization", `Bearer ${token}`)
+
+      const requestOptions = {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+      };
+      let resp;
+      try {
+        resp = await fetch("{{ .API }}/api/auth/vterm-success-handler", requestOptions);
+        const txn = await resp.json();
+        console.log(txn);
+        showCardSuccess("Transaction completed");
+        const receipt = document.getElementById("receipt");
+        receipt.classList.remove("d-none");
+        const bankCode = document.getElementById("bank-return-code");
+        bankCode.innerText = txn.bank_return_code;
+
+      }
+      catch (err) {
+         console.log("resp:", resp);
+         showCardError("Problem completing transaction: " + err);
+      }
+    }
+
+  {{ end }}
+
 
   function setResetFunc(parent) {
      const rFunc = function(evt) {
@@ -161,7 +201,10 @@
             body: JSON.stringify(payload),
         }
 
-        fetch("{{ .API }}/api/payment-intent", requestOptions)
+        const endPoint = "{{ .API }}/api/payment-intent";
+        console.log("fetch to:", endPoint);
+
+        fetch(endPoint, requestOptions)
             .then(response => response.text())
             .then(response => {
                 let data;
@@ -182,16 +225,14 @@
                           } else if(result.paymentIntent) {
                               if (result.paymentIntent.status === "succeeded") {
                                   // we have charged the card
-                                  document.getElementById("payment_method").value = result.paymentIntent.payment_method;
-                                  document.getElementById("payment_intent").value = result.paymentIntent.id;
-                                  document.getElementById("payment_amount").value = result.paymentIntent.amount;
-                                  document.getElementById("payment_currency").value = result.paymentIntent.currency;
                                   processing.classList.add("d-none");
                                   showCardSuccess();
-                                  document.getElementById("charge_form").submit();                            }
+                                  // document.getElementById("charge_form").submit();
+                                  completeVTTransaction(result);                           }
                           }
                       })
                 } catch (err) {
+                    console.log("data:", data);
                     console.log(err);
                     console.log(response);
                     showCardError("Invalid response from payment gateway!");

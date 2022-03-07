@@ -92,7 +92,7 @@ func (m *DBModel) GetUserFromToken(token string, ttl time.Duration) (*User, erro
 
 	query := `
 		select
-			u.id, u. u.first_name, u.last_name,
+			u.id, u.first_name, u.last_name,
 			u.email, t.created_at
 		from users u
 		inner join tokens t on t.user_id = u.id

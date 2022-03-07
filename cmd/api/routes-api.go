@@ -9,12 +9,14 @@ import (
 
 func (app *application) routes() http.Handler {
 	mux := chi.NewRouter()
+	mux.Use(app.logRequest)
 	mux.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Allow", "Authorization", "Content-Type", "X-CSRF-Token"},
 		AllowCredentials: false,
 		MaxAge:           300,
+		Debug:            true,
 	}))
 
 	mux.Post("/api/payment-intent", app.GetPaymentIntent)
@@ -27,9 +29,11 @@ func (app *application) routes() http.Handler {
 	// To apply an auth middleware on a group of routes, we use the Router
 	// method to create a sub-router
 
-	return mux.Route("/api/auth", func(mux chi.Router) {
+	mux.Route("/api/auth", func(mux chi.Router) {
 		mux.Use(app.AuthHandler)
 
-		mux.Get("/vterm-success-handler", app.VTermSuccessHandler)
+		mux.Post("/vterm-success-handler", app.VTermSuccessHandler)
 	})
+
+	return mux
 }
