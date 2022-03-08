@@ -86,10 +86,8 @@
 
   function setResetFunc(parent) {
      const rFunc = function(evt) {
-       console.log("fired");
        const errBlock = parent.querySelector(".errors");
        if (errBlock) {
-         console.log("have eblock", evt);
          if (evt.target.validationMessage) {
            errBlock.innerHTML = evt.target.validationMessage;
          }
@@ -101,6 +99,39 @@
      return rFunc;
   }
 
+  function validateElem(elem) {
+      const control = elem.querySelector(":invalid");
+      if (control && control.validationMessage) {
+        // console.log(`${control.name}: ${control.validationMessage}`);
+        const errBlock = elem.querySelector(".errors");
+        if (errBlock) {
+          errBlock.innerHTML = control.validationMessage;
+          errBlock.classList.remove("d-none");
+          control.onchange = setResetFunc(elem);
+        }
+      }
+  }
+
+  function initValidation() {
+      console.log("initialized!");
+      let form = document.getElementById("charge_form");
+      const elems = form.querySelectorAll("div.nval");
+      const validator = function(elem) {
+          const input = elem.querySelector("input");
+          return function(evt) {
+            input.checkValidity();
+            setResetFunc(elem);
+            validateElem(elem);
+          }
+      }
+
+      for (let elem of elems) {
+        const input = elem.querySelector("input");
+        input.addEventListener("input", validator(elem));
+        input.addEventListener("blur", validator(elem));
+      }
+  }
+
   function val() {
       let form = document.getElementById("charge_form");
       if (form.checkValidity() === false) {
@@ -109,16 +140,7 @@
           form.classList.add("was-validated");
           const elems = form.querySelectorAll("div.nval");
           for (let elem of elems) {
-            const control = elem.querySelector(":invalid");
-            if (control && control.validationMessage) {
-              // console.log(`${control.name}: ${control.validationMessage}`);
-              const errBlock = elem.querySelector(".errors");
-              if (errBlock) {
-                errBlock.innerHTML = control.validationMessage;
-                errBlock.classList.remove("d-none");
-                control.onchange = setResetFunc(elem);
-              }
-            }
+            validateElem(elem);
           }
           return;
       }
@@ -245,6 +267,10 @@
 
 
     (function() {
+        // Set up change handlers for other form
+        // elements
+        initValidation();
+
         // create stripe & elements
         const elements = stripe.elements();
         const style = {
