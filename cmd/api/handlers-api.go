@@ -9,10 +9,12 @@ import (
 
 	"github.com/torenware/go-stripe/internal/cards"
 	"github.com/torenware/go-stripe/internal/models"
+	"github.com/torenware/go-stripe/internal/urlsigner"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	AuthTokenTTL = 25 * time.Hour
+	AuthTokenTTL = 24 * time.Hour
 )
 
 type stripePayload struct {
@@ -226,6 +228,127 @@ func (app *application) SaveTxn(txn models.Transaction) (int, error) {
 }
 
 // Authentication
+
+func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Email string `json:"email"`
+	}
+
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	// See if we have such a user
+	user, err := app.DB.GetUserByEmail(payload.Email)
+	if err != nil {
+		app.invalidCredentials(w)
+		return
+	}
+
+	// We say we are sending even if we are not...
+	var output struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	var data struct {
+		Link string
+	}
+
+	link := fmt.Sprintf("%s/reset-password?email=%s", app.config.frontend, payload.Email)
+	sign := urlsigner.Signer{
+		Secret: []byte(app.config.secretkey),
+	}
+
+	signedLink := sign.GenerateTokenFromString(link)
+	data.Link = signedLink
+
+	if user.ID != 0 {
+		app.infoLog.Println("Email would be sent here")
+		// send mail
+		err = app.SendMail("info@widgets.com", user.Email, "Password Reset Request", "password-reset", data)
+		if err != nil {
+			app.errorLog.Println(err)
+			app.badRequest(w, r, err)
+			return
+		}
+		output.Error = false
+		output.Message = "We've sent you an email with a link"
+	} else {
+		output.Error = true
+		output.Message = "Sorry! We cannot find you in our system."
+	}
+
+	app.writeJSON(w, http.StatusOK, output)
+
+}
+
+func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Email     string `json:"email"`
+		EmailHash string `json:"email_hash"`
+		Password  string `json:"password"`
+	}
+
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	// Does it look legit?
+	sign := urlsigner.Signer{
+		Secret: []byte(app.config.secretkey),
+	}
+	err = sign.ConfirmHashForString(payload.EmailHash, payload.Email)
+	if err != nil {
+		app.errorLog.Println("validation failed:", err)
+		// but we continue...
+	} else {
+		app.infoLog.Println("validation worked!")
+	}
+	user, err := app.DB.GetUserByEmail(payload.Email)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(payload.Password), 12)
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	// see if it is valid
+	err = bcrypt.CompareHashAndPassword(newHash, []byte(payload.Password))
+	app.infoLog.Println("CHAP returned", err)
+
+	newUser, _ := app.DB.GetUserByEmail(payload.Email)
+	if newUser.Password != string(newHash) {
+		app.infoLog.Println("pw correctly reset")
+	} else {
+		app.infoLog.Println("pw got munged!!")
+	}
+
+	err = app.DB.UpdatePasswordForUser(user, string(newHash))
+	if err != nil {
+		app.badRequest(w, r, err)
+		return
+	}
+
+	var output struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	output.Error = false
+	output.Message = "Email has been changed"
+
+	app.writeJSON(w, http.StatusOK, output)
+
+}
 
 func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) {
 	var userInput struct {

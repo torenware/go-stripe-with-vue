@@ -11,6 +11,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/torenware/go-stripe/internal/driver"
 	"github.com/torenware/go-stripe/internal/models"
+	mail "github.com/xhit/go-simple-mail/v2"
 )
 
 const version = "1.0.0"
@@ -25,15 +26,18 @@ type config struct {
 		secret string
 		key    string
 	}
+	secretkey string
+	frontend  string
 }
 
 // receiver type
 type application struct {
-	config   config
-	infoLog  *log.Logger
-	errorLog *log.Logger
-	version  string
-	DB       *models.DBModel
+	config     config
+	infoLog    *log.Logger
+	errorLog   *log.Logger
+	version    string
+	DB         *models.DBModel
+	mailServer *mail.SMTPServer
 }
 
 func (app *application) serve() error {
@@ -68,7 +72,17 @@ func main() {
 
 	config.stripe.key = os.Getenv("STRIPE_KEY")
 	config.stripe.secret = os.Getenv("STRIPE_SECRET")
-	//dsn, err := driver.ConstructDSN()
+
+	// crypto keys
+	config.secretkey = os.Getenv("SECRET_KEY")
+	if config.secretkey == "" {
+		errorLog.Fatalln("SECRET_KEY must be in environment")
+	}
+	config.frontend = os.Getenv(("FRONT_END"))
+	if config.frontend == "" {
+		errorLog.Fatalln("FRONT_END must be in environment")
+	}
+
 	var err error
 	dsn, err := driver.ConstructDSN()
 	if err != nil {
@@ -85,12 +99,19 @@ func main() {
 	infoLog.Println("Database is UP")
 	defer conn.Close()
 
+	server, err := initMailserver()
+	if err != nil {
+		errorLog.Println(err)
+		return
+	}
+
 	app := &application{
-		config:   config,
-		infoLog:  infoLog,
-		errorLog: errorLog,
-		version:  version,
-		DB:       &models.DBModel{DB: conn},
+		config:     config,
+		infoLog:    infoLog,
+		errorLog:   errorLog,
+		version:    version,
+		DB:         &models.DBModel{DB: conn},
+		mailServer: server,
 	}
 
 	err = app.serve()

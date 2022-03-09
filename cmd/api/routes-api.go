@@ -25,6 +25,8 @@ func (app *application) routes() http.Handler {
 	// Auth
 	mux.Post("/api/authenticate", app.CreateAuthToken)
 	mux.Post("/api/is-authenticated", app.CheckAuthentication)
+	mux.Post("/api/password-link", app.PasswordLink)
+	mux.Post("/api/reset-password", app.ResetPassword)
 
 	// To apply an auth middleware on a group of routes, we use the Router
 	// method to create a sub-router

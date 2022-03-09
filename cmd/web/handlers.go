@@ -1,12 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/torenware/go-stripe/internal/cards"
 	"github.com/torenware/go-stripe/internal/models"
+	"github.com/torenware/go-stripe/internal/urlsigner"
 )
 
 // The clientError helper sends a specific status code and corresponding description
@@ -365,4 +368,57 @@ func (app *application) Logout(w http.ResponseWriter, r *http.Request) {
 	session.Destroy(r.Context())
 	session.RenewToken(r.Context())
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (app *application) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "forgot-password", nil); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	theURL := r.RequestURI
+	testURL := fmt.Sprintf("%s%s", app.config.frontend, theURL)
+
+	signer := urlsigner.Signer{
+		Secret: []byte(app.config.secretkey),
+	}
+
+	valid := signer.VerifyToken(testURL)
+
+	if !valid {
+		app.errorLog.Println("Invalid url - tampering detected")
+		return
+	}
+
+	// Token expires at 60 minutes
+	if signer.Expired(testURL, 60) {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Make sure the email is hashed as well:
+	email := r.URL.Query().Get("email")
+	hash, err := signer.GetHashWithSalt(email)
+	if err != nil {
+		app.errorLog.Println("hasher failed:", err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	data := make(map[string]interface{})
+	data["email"] = email
+	data["email_hash"] = hash
+	td := templateData{
+		Data: data,
+	}
+	if err := app.renderTemplate(w, r, "reset-password", &td); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) PasswordLinkSent(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "link-sent", nil); err != nil {
+		app.errorLog.Println(err)
+	}
 }

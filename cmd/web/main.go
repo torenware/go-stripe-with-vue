@@ -33,6 +33,8 @@ type config struct {
 		secret string
 		key    string
 	}
+	secretkey string
+	frontend  string
 }
 
 // receiver type
@@ -96,6 +98,16 @@ func main() {
 	}
 	infoLog.Println("Database is UP")
 	defer conn.Close()
+
+	// crypto keys
+	config.secretkey = os.Getenv("SECRET_KEY")
+	if config.secretkey == "" {
+		errorLog.Fatalln("SECRET_KEY must be in environment")
+	}
+	config.frontend = os.Getenv(("FRONT_END"))
+	if config.frontend == "" {
+		errorLog.Fatalln("FRONT_END must be in environment")
+	}
 
 	// Initialize a new session manager and configure the session lifetime.
 	session = scs.New()
