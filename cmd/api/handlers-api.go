@@ -72,7 +72,7 @@ func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request)
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(out)
+		_, _ = w.Write(out)
 	} else {
 		j := jsonResponse{
 			OK:      false,

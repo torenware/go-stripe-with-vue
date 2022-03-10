@@ -32,6 +32,8 @@ func (app *application) routes() http.Handler {
 		mux.Use(app.AuthHandler)
 		mux.Get("/virtual-terminal", app.VirtualTerminal)
 		mux.Post("/vterm-payment-succeeded", app.VTPaymentSucceeded)
+		mux.Get("/all-sales", app.AllSales)
+		mux.Get("/all-subscriptions", app.AllSubscriptions)
 	})
 
 	fileServer := http.FileServer(http.Dir("./static/"))

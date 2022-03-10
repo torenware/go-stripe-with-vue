@@ -422,3 +422,19 @@ func (app *application) PasswordLinkSent(w http.ResponseWriter, r *http.Request)
 		app.errorLog.Println(err)
 	}
 }
+
+// Admin functions
+
+func (app *application) AllSales(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "all-sales", nil); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) AllSubscriptions(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "all-subscriptions", nil); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+

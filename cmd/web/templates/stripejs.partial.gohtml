@@ -207,8 +207,7 @@
           }
        }
 
-
-    {{ else }}
+      {{ else }}
         let payload = {
             amount: amountToCharge,
             currency: 'cad',
@@ -224,7 +223,6 @@
         }
 
         const endPoint = "{{ .API }}/api/payment-intent";
-        console.log("fetch to:", endPoint);
 
         fetch(endPoint, requestOptions)
             .then(response => response.text())
@@ -249,8 +247,19 @@
                                   // we have charged the card
                                   processing.classList.add("d-none");
                                   showCardSuccess();
-                                  // document.getElementById("charge_form").submit();
-                                  completeVTTransaction(result);                           }
+                                  //
+                                  {{ if $widget }}
+                                    // console.log(JSON.stringify(result.paymentIntent))
+                                    const {id, payment_method, currency } = result.paymentIntent;
+                                    document.getElementById("payment_amount").value = amountToCharge;
+                                    document.getElementById("payment_intent").value = id;
+                                    document.getElementById("payment_method").value = payment_method;
+                                    document.getElementById("payment_currency").value = currency;
+                                    document.getElementById("charge_form").submit();
+                                  {{ else }}
+                                    completeVTTransaction(result);
+                                  {{end}}
+                              }
                           }
                       })
                 } catch (err) {
