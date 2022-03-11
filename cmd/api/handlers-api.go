@@ -86,7 +86,7 @@ func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write(out)
+		_, _ = w.Write(out)
 	}
 
 }
@@ -501,9 +501,31 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 	id, err := app.SaveTxn(txn)
 	if err != nil {
 		app.errorLog.Println("STX", err)
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 	txn.ID = id
-	app.writeJSON(w, http.StatusOK, txn)
+	_  = app.writeJSON(w, http.StatusOK, txn)
+}
+
+func (app *application) ListSales(w http.ResponseWriter, r *http.Request) {
+	// fetch search params later.
+	rows, err := app.DB.GetAllSales()
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	_ = app.writeJSON(w, http.StatusOK, rows)
+}
+
+func (app *application) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
+	// fetch search params later.
+	rows, err := app.DB.GetAllSubscriptions()
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	_ = app.writeJSON(w, http.StatusOK, rows)
 }

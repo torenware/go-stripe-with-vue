@@ -6,9 +6,88 @@
 {{ end }}
 
 {{ define "content"}}
-  <h2 class="ht-3">Sales Summary</h2>
+    <h2 class="ht-3">Sales Summary</h2>
+    <table class="table table-striped">
+      <thead>
+        <th>Order</th>
+        <th>Date</th>
+        <th>Item</th>
+        <th>TXN ID</th>
+        <th>Amount</th>
+        <th>Last Four</th>
+        <th>Customer</th>
+      </thead>
+      <tbody id="sales-rows"></tbody>
+    </table>
 {{ end }}
 
 {{ define "js"}}
+  <script>
+    function LocalDate(dateStr) {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString();
+    }
 
+    function formatAsCurrency(amount, locale, currency) {
+      const units = parseFloat(amount / 100)
+      locale = locale ? locale : "en-CA";
+      currency = currency ? currency : "CAD";
+      const options = {
+        style: 'currency',
+        currency
+      }
+      return units.toLocaleString(locale, options);
+    }
+
+    const doIt = async () => {
+      let rows = []
+      const {token} = getTokenData();
+      const requestOptions = {
+        method: 'post',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      }
+      try {
+        const rslt = await fetch("{{ .API }}/api/auth/list-sales", requestOptions);
+        rows = await rslt.json();
+        const tbody = document.getElementById("sales-rows");
+
+        let row;
+        if (rows === null) {
+          row = tbody.insertRow();
+          let cell = row.insertCell();
+          cell.setAttribute("colspan", "7");
+          cell.innerText = "No orders currently available.";
+        } else {
+
+          rows.forEach(rw => {
+            row = tbody.insertRow();
+            let cell = row.insertCell()
+            cell.innerHTML = `<a href="/admin/order/${rw.id}">${rw.id}</a>`;
+            cell = row.insertCell()
+            cell.innerText = LocalDate(rw.created_at);
+            cell = row.insertCell()
+            cell.innerText = rw.widget.name;
+            cell = row.insertCell()
+            cell.innerText = rw.transaction_id;
+            cell = row.insertCell()
+            cell.innerText = formatAsCurrency(rw.amount);
+            cell = row.insertCell()
+            cell.innerText = rw.transaction.last_four;
+            cell = row.insertCell()
+            cell.innerText = `${rw.customer.last_name}, ${rw.customer.first_name}`;
+          });
+
+        }
+      }
+      catch(err) {
+        console.log("threw: ", err)
+      }
+
+    }
+    doIt();
+  </script>
 {{ end }}

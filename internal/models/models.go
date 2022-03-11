@@ -49,8 +49,11 @@ type Order struct {
 	StatusID      int       `json:"status_id"`
 	Quantity      int       `json:"quantity"`
 	Amount        int       `json:"amount"`
-	CreatedAt     time.Time `json:"-"`
+	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"-"`
+	Widget	Widget `json:"widget"`
+	Transaction Transaction `json:"transaction"`
+	Customer Customer  `json:"customer"`
 }
 
 // Status is the type for order statuses
@@ -96,7 +99,7 @@ type User struct {
 	UpdatedAt time.Time `json:"-"`
 }
 
-// User is the type for users
+// Customer is the type for users
 type Customer struct {
 	ID        int       `json:"id"`
 	FirstName string    `json:"first_name"`
@@ -309,4 +312,135 @@ func (m *DBModel) UpdatePasswordForUser(u User, hash string) error {
 	}
 
 	return nil
+}
+
+
+func (m *DBModel) GetAllSales() ([]*Order, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+select
+    o.amount, o.quantity, w.price, t.currency,
+    o.id as order_id, o.widget_id, o.transaction_id,o.customer_id,
+    o.created_at,  o.status_id,
+    w.name as item, w.description,
+    t.last_four, t.expiry_month, t.expiry_year,
+    t.payment_intent, t.bank_return_code,
+    c.first_name, c.last_name, c.email
+
+from orders o
+         left join widgets w on (o.widget_id = w.id)
+         left join transactions t on (o.transaction_id = t.id)
+         left join customers c on (o.customer_id= c.id)
+
+where
+        w.is_recurring = 0
+order by
+		o.created_at desc
+`
+	var rslt []*Order
+	rows, err := m.DB.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+	for rows.Next() {
+		var o Order
+		err = rows.Scan(
+			&o.Amount,
+			&o.Quantity,
+			&o.Widget.Price,
+			&o.Transaction.Currency,
+			&o.ID,
+			&o.WidgetID,
+			&o.TransactionID,
+			&o.CustomerID,
+			&o.CreatedAt,
+			&o.StatusID,
+			&o.Widget.Name,
+			&o.Widget.Description,
+			&o.Transaction.LastFour,
+			&o.Transaction.ExpiryMonth,
+			&o.Transaction.ExpiryYear,
+			&o.Transaction.PaymentIntent,
+			&o.Transaction.BankReturnCode,
+			&o.Customer.FirstName,
+			&o.Customer.LastName,
+			&o.Customer.Email,
+		)
+		if err != nil {
+			return nil, err
+		}
+		rslt = append(rslt, &o)
+	}
+
+	return rslt, nil
+}
+
+func (m *DBModel) GetAllSubscriptions() ([]*Order, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+select
+    o.amount, o.quantity, w.price, t.currency,
+    o.id as order_id, o.widget_id, o.transaction_id,o.customer_id,
+    o.created_at,  o.status_id,
+    w.name as item, w.description,
+    t.last_four, t.expiry_month, t.expiry_year,
+    t.payment_intent, t.bank_return_code,
+    c.first_name, c.last_name, c.email
+
+from orders o
+         left join widgets w on (o.widget_id = w.id)
+         left join transactions t on (o.transaction_id = t.id)
+         left join customers c on (o.customer_id= c.id)
+
+where
+        w.is_recurring = 1
+order by
+		o.created_at desc
+`
+	var rslt []*Order
+	rows, err := m.DB.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+	for rows.Next() {
+		var o Order
+		err = rows.Scan(
+			&o.Amount,
+			&o.Quantity,
+			&o.Widget.Price,
+			&o.Transaction.Currency,
+			&o.ID,
+			&o.WidgetID,
+			&o.TransactionID,
+			&o.CustomerID,
+			&o.CreatedAt,
+			&o.StatusID,
+			&o.Widget.Name,
+			&o.Widget.Description,
+			&o.Transaction.LastFour,
+			&o.Transaction.ExpiryMonth,
+			&o.Transaction.ExpiryYear,
+			&o.Transaction.PaymentIntent,
+			&o.Transaction.BankReturnCode,
+			&o.Customer.FirstName,
+			&o.Customer.LastName,
+			&o.Customer.Email,
+		)
+		if err != nil {
+			return nil, err
+		}
+		rslt = append(rslt, &o)
+	}
+
+	return rslt, nil
 }
