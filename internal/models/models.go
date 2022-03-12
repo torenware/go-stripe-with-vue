@@ -530,7 +530,7 @@ func (m *DBModel) SetOrderStatusID(orderID, statusID int) error {
 	defer cancel()
 
 	stmt := `
-	update orders set status_id = ? where id = ?
+	update orders set status_id = ?, updated_at = now() where id = ?
 `
 	_, err := m.DB.ExecContext(ctx, stmt, statusID, orderID)
 	if err != nil {

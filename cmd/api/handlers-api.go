@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/stripe/stripe-go/v72"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,6 +26,7 @@ type stripePayload struct {
 	Amount        int    `json:"amount"`
 	PlanID        string `json:"plan"`
 	PaymentMethod string `json:"payment_method"`
+	PaymentIntent string `json:"payment_intent"`
 	Email         string `json:"email"`
 	CardBrand     string `json:"card_brand"`
 	ExpiryMonth   int    `json:"exp_month"`
@@ -113,7 +115,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 	}
 
 	ok := true
-	//var subscription *stripe.Subscription
+	var subscription *stripe.Subscription
 	txnMsg := "Transaction is successful"
 
 	cust, msg, err := card.CreateCustomer(payload.PaymentMethod, payload.Email)
@@ -123,15 +125,16 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 		txnMsg = msg
 	}
 	if ok {
-		subscription, err := card.SubscribeCustomer(cust, payload.PlanID, payload.Email, payload.LastFour, "")
+		subscription, err = card.SubscribeCustomer(cust, payload.PlanID, payload.Email, payload.LastFour, "")
 		if err != nil {
 			app.errorLog.Println(msg, err)
 			ok = false
 			txnMsg = "Subscription failed"
 		}
-		app.infoLog.Println("Subscribed as:", subscription.ID)
 	}
 
+	// Update the record to save a few fields. We use the PaymentsIntent field to hold the sub ID,
+	// and save the pm as well.
 	if ok {
 		// save to DB...
 		sp := payload
@@ -144,6 +147,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 			Amount:              sp.Amount,
 			Currency:            sp.Currency,
 			PaymentMethod:       sp.PaymentMethod,
+			PaymentIntent:       subscription.ID, // we reuse this field. Not my idea :-)
 			LastFour:            sp.LastFour,
 			ExpiryMonth:         sp.ExpiryMonth,
 			ExpiryYear:          sp.ExpiryYear,
@@ -624,4 +628,51 @@ func (app *application) RefundCharge(w http.ResponseWriter, r *http.Request) {
 	resp.Error = false
 	resp.Message = "Refund created"
 	_ = app.writeJSON(w, http.StatusCreated, resp)
+}
+
+func (app *application) CancelSubscription(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		OrderID int `json:"id"`
+	}
+	err := app.readJSON(w, r, &payload)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+	order, err := app.DB.GetSubscription(payload.OrderID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			app.notFound(w, r)
+			return
+		}
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	card := cards.Card{
+		Secret: app.config.stripe.secret,
+		Key: app.config.stripe.key,
+		Currency: order.Transaction.Currency,
+	}
+	// We stash the subID in the paymentIntent:
+	err = card.CancelSubscription(order.Transaction.PaymentIntent)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	// update order status
+	err = app.DB.SetOrderStatusID(order.ID, cards.STATUS_CANCELLED_SUB)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	var out struct {
+		Error bool `json:"error"`
+		Message string `json:"message"`
+	}
+	out.Message = "unsubscribe successful"
+
+	_ = app.writeJSON(w, http.StatusOK, out)
 }

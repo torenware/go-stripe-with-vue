@@ -31,7 +31,7 @@
         </tr>
         <tr>
             <th>
-                Item
+                Plan
             </th>
             <td>
                 {{ $order.Widget.Name }}
@@ -46,19 +46,95 @@
             </td>
         </tr>
         <tr>
+            <th>
+                Plan Status
+            </th>
             <td>
-
-            </td>
-            <td>
-
+                <span id="unsubscribed" class="badge bg-danger d-none">Canceled</span>
+                <span id="subscribed" class="badge bg-success d-none">Subscribed</span>
             </td>
         </tr>
 
         </tbody>
     </table>
     <div class="mt-4">
-        <button class="btn btn-primary btn-small">Cancel Plan</button>
+        <button  id="refund-btn" class="btn btn-primary btn-small">Cancel Plan</button>
         <a href="/admin/all-subscriptions" class="btn btn-warning btn-small">Cancel</a>
     </div>
 
 {{end}}
+
+{{ define "js"}}
+    {{ $order := index .Data "order" }}
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+
+        const confirmDialog = (guardedFunc) => {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Cancel subscription'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire(
+                        'Unsubscribed',
+                        'Subscription has been cancelled.',
+                        'success'
+                    )
+                    guardedFunc();
+                }
+            })
+        }
+        let statusID = {{ $order.StatusID }};
+        const refBtn = document.getElementById("refund-btn");
+
+        const cancelSubscription = async () => {
+            const id = {{ $order.ID }};
+            const payload = {
+                id,
+            };
+            const {token} = getTokenData();
+            const requestOptions = {
+                method: 'post',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            }
+            try {
+                const rslt = await fetch("{{ .API }}/api/auth/cancel-subscription", requestOptions);
+                const data = await rslt.json();
+
+                if (!data.error) {
+                    showCardSuccess("Subscription has been cancelled.")
+                    refBtn.classList.add("d-none");
+                    document.getElementById("subscribed").classList.add("d-none");
+                    document.getElementById("unsubscribed").classList.remove("d-none");
+                }
+
+            } catch(err) {
+                console.log(err);
+                showCardError("Problem cancelling subscription.")
+            }
+        };
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if (statusID === 1) {
+                document.getElementById("subscribed").classList.remove("d-none");
+                refBtn.addEventListener("click", evt => {
+                    confirmDialog(cancelSubscription);
+                });
+            } else {
+                document.getElementById("unsubscribed").classList.remove("d-none");
+                refBtn.classList.add("d-none");
+            }
+        });
+
+    </script>
+{{ end }}

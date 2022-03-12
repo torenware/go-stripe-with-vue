@@ -26,6 +26,7 @@ type Transaction struct {
 const (
 	STATUS_CHARGED = 1
 	STATUS_REFUNDED = 2
+	STATUS_CANCELLED_SUB = 3
 )
 
 func (c *Card) Charge(currency string, amount int) (*stripe.PaymentIntent, string, error) {
@@ -128,6 +129,12 @@ func (c *Card) Refund(pi string, amount int) error {
 		return err
 	}
 	return nil
+}
+
+func (c *Card) CancelSubscription(subID string) error {
+	stripe.Key = c.Secret
+	_, err := sub.Cancel(subID, nil)
+	return err
 }
 
 func cardErrorMessage(code stripe.ErrorCode) string {

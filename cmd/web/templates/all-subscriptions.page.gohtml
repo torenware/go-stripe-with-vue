@@ -16,6 +16,7 @@
         <th>Amount</th>
         <th>Last Four</th>
         <th>Customer</th>
+        <th>Plan Status</th>
         </thead>
         <tbody id="sales-rows"></tbody>
     </table>
@@ -42,7 +43,6 @@
             try {
                 const rslt = await fetch("{{ .API }}/api/auth/list-subs", requestOptions);
                 rows = await rslt.json();
-                console.log("subs:", rows);
                 const tbody = document.getElementById("sales-rows");
                 let row;
 
@@ -69,10 +69,20 @@
                         cell = row.insertCell()
                         const fullName = `${rw.customer.last_name}, ${rw.customer.first_name}`;
                         cell.innerText = fullName;
+
+                        cell = row.insertCell()
+                        let badge = "";
+                        switch (rw.status_id) {
+                            case 1:
+                                badge = `<span class="badge bg-success">Subscribed</span>`;
+                                break;
+                            case 3:
+                                badge = `<span class="badge bg-danger">Cancelled</span>`;
+                                break;
+                        }
+                        cell.innerHTML = badge;
                     });
                 }
-
-
             }
             catch(err) {
                 console.log("threw: ", err)
