@@ -135,7 +135,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 	if ok {
 		// save to DB...
 		sp := payload
-		cust_id, err := app.SaveCustomer(sp.FirstName, sp.LastName, sp.Email)
+		custID, err := app.SaveCustomer(sp.FirstName, sp.LastName, sp.Email)
 		if err != nil {
 			app.errorLog.Println(err)
 			return
@@ -164,7 +164,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 		order := models.Order{
 			WidgetID:      pID,
 			TransactionID: txnID,
-			CustomerID:    cust_id,
+			CustomerID:    custID,
 			StatusID:      1,
 			Quantity:      1,
 			Amount:        sp.Amount,
@@ -190,7 +190,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(out)
+	_, _ = w.Write(out)
 
 }
 
@@ -239,14 +239,14 @@ func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
 
 	err := app.readJSON(w, r, &payload)
 	if err != nil {
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
 	// See if we have such a user
 	user, err := app.DB.GetUserByEmail(payload.Email)
 	if err != nil {
-		app.invalidCredentials(w)
+		_ = app.invalidCredentials(w)
 		return
 	}
 
@@ -274,7 +274,7 @@ func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
 		err = app.SendMail("info@widgets.com", user.Email, "Password Reset Request", "password-reset", data)
 		if err != nil {
 			app.errorLog.Println(err)
-			app.badRequest(w, r, err)
+			_ = app.badRequest(w, r, err)
 			return
 		}
 		output.Error = false
@@ -284,7 +284,7 @@ func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
 		output.Message = "Sorry! We cannot find you in our system."
 	}
 
-	app.writeJSON(w, http.StatusOK, output)
+	_ = app.writeJSON(w, http.StatusOK, output)
 
 }
 
@@ -297,7 +297,7 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	err := app.readJSON(w, r, &payload)
 	if err != nil {
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
@@ -314,13 +314,13 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := app.DB.GetUserByEmail(payload.Email)
 	if err != nil {
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
 	newHash, err := bcrypt.GenerateFromPassword([]byte(payload.Password), 12)
 	if err != nil {
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
@@ -337,7 +337,7 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	err = app.DB.UpdatePasswordForUser(user, string(newHash))
 	if err != nil {
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
@@ -349,7 +349,7 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	output.Error = false
 	output.Message = "Email has been changed"
 
-	app.writeJSON(w, http.StatusOK, output)
+	_ = app.writeJSON(w, http.StatusOK, output)
 
 }
 
@@ -361,14 +361,14 @@ func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) 
 
 	err := app.readJSON(w, r, &userInput)
 	if err != nil {
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
 	// See if we have such a user
 	user, err := app.DB.GetUserByEmail(userInput.Email)
 	if err != nil {
-		app.invalidCredentials(w)
+		_ = app.invalidCredentials(w)
 		return
 	}
 	matches, err := app.passwordsMatch(user.Password, userInput.Password)
@@ -378,21 +378,21 @@ func (app *application) CreateAuthToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if !matches {
-		app.invalidCredentials(w)
+		_ = app.invalidCredentials(w)
 		return
 	}
 	// Now generate our token
 	token, err := models.GenerateToken(user.ID, AuthTokenTTL, models.ScopeAuthentication)
 	if err != nil {
 		app.errorLog.Println(err)
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
 	err = app.DB.InsertToken(token, user)
 	if err != nil {
 		app.errorLog.Println(err)
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 	}
 
 	var payload struct {
@@ -461,7 +461,7 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 	err := app.readJSON(w, r, &txnData)
 	if err != nil {
 		app.errorLog.Println("RJ", err)
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
@@ -473,14 +473,14 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 	pi, err := card.RetrievePaymentIntent(txnData.PaymentIntent)
 	if err != nil {
 		app.errorLog.Println("RPI", err)
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
 	pm, err := card.GetPaymentMethod(txnData.PaymentMethod)
 	if err != nil {
 		app.errorLog.Println("GPM", err)
-		app.badRequest(w, r, err)
+		_ = app.badRequest(w, r, err)
 		return
 	}
 
