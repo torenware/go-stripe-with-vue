@@ -15,6 +15,10 @@
     {{end}}
     </title>
 
+    {{ block "css" . }}
+
+    {{ end}}
+
   </head>
   <body>
 
@@ -162,6 +166,35 @@
       localStorage.removeItem("expiry");
       location.href = "/logout";
     }
+
+    function showCardError(msg) {
+      const cardMessages = document.getElementById("card-messages");
+      cardMessages.classList.add("alert-danger");
+      cardMessages.classList.remove("alert-success");
+      cardMessages.classList.remove("d-none");
+      cardMessages.innerText = msg;
+    }
+
+    function showCardSuccess() {
+      const cardMessages = document.getElementById("card-messages");
+      cardMessages.classList.remove("alert-danger");
+      cardMessages.classList.add("alert-success");
+      cardMessages.classList.remove("d-none");
+      cardMessages.innerText = "Transaction successful";
+    }
+
+
+    function formatAsCurrency(amount, locale, currency) {
+      const units = parseFloat(amount / 100)
+      locale = locale ? locale : "en-CA";
+      currency = currency ? currency : "CAD";
+      const options = {
+        style: 'currency',
+        currency
+      }
+      return units.toLocaleString(locale, options);
+    }
+
   </script>
 
   {{ block "js" . }}

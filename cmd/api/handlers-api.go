@@ -1,8 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
 	"time"
@@ -528,4 +531,97 @@ func (app *application) ListSubscriptions(w http.ResponseWriter, r *http.Request
 	}
 
 	_ = app.writeJSON(w, http.StatusOK, rows)
+}
+
+func (app *application) SingleSale(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r,"id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		app.errorLog.Println("url param must be an integer")
+		_ = app.badRequest(w, r, errors.New("url param must be an integer"))
+		return
+	}
+	item, err := app.DB.GetSale(id)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		_ = app.badRequest(w, r, err)
+		return
+	}
+	_ = app.writeJSON(w, http.StatusOK, item)
+}
+
+func (app *application) SingleSubscription(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r,"id")
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		app.errorLog.Println("url param must be an integer")
+		_ = app.badRequest(w, r, errors.New("url param must be an integer"))
+		return
+	}
+	item, err := app.DB.GetSubscription(id)
+	if err != nil {
+		app.errorLog.Println(err.Error())
+		_ = app.badRequest(w, r, err)
+		return
+	}
+	_ = app.writeJSON(w, http.StatusOK, item)
+}
+
+func (app *application) RefundCharge(w http.ResponseWriter, r *http.Request) {
+	var chargeToRefund struct {
+		ID int `json:"id"` // order_Id
+		PaymentIntent string `json:"pi"`
+		Amount int `json:"amount"` // 0 for full.
+		Currency string `json:"currency"`
+	}
+	err := app.readJSON(w, r, &chargeToRefund)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	// Let's validate the request.
+	order, err := app.DB.GetSale(chargeToRefund.ID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			app.notFound(w, r)
+			return
+		}
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	if chargeToRefund.Amount == 0 {
+		chargeToRefund.Amount = order.Amount
+	} else if chargeToRefund.Amount > order.Amount {
+		// fraud
+		app.errorLog.Println("FRAUD: overrefunding a charge")
+		_ = app.badRequest(w, r, errors.New("rejected"))
+		return
+	}
+
+	card := cards.Card{
+		Secret: app.config.stripe.secret,
+		Key: app.config.stripe.key,
+		Currency: order.Transaction.Currency,
+	}
+	err = card.Refund(chargeToRefund.PaymentIntent, chargeToRefund.Amount)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+	err = app.DB.SetOrderStatusID(order.ID, cards.STATUS_REFUNDED)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	var resp struct {
+		Error bool `json:"error"`
+		Message string `json:"message"`
+	}
+
+	resp.Error = false
+	resp.Message = "Refund created"
+	_ = app.writeJSON(w, http.StatusCreated, resp)
 }

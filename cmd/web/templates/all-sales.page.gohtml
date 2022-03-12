@@ -16,6 +16,7 @@
         <th>Amount</th>
         <th>Last Four</th>
         <th>Customer</th>
+        <th>Status</th>
       </thead>
       <tbody id="sales-rows"></tbody>
     </table>
@@ -26,17 +27,6 @@
     function LocalDate(dateStr) {
       const date = new Date(dateStr);
       return date.toLocaleDateString();
-    }
-
-    function formatAsCurrency(amount, locale, currency) {
-      const units = parseFloat(amount / 100)
-      locale = locale ? locale : "en-CA";
-      currency = currency ? currency : "CAD";
-      const options = {
-        style: 'currency',
-        currency
-      }
-      return units.toLocaleString(locale, options);
     }
 
     const doIt = async () => {
@@ -79,6 +69,18 @@
             cell.innerText = rw.transaction.last_four;
             cell = row.insertCell()
             cell.innerText = `${rw.customer.last_name}, ${rw.customer.first_name}`;
+            cell = row.insertCell()
+
+            let badge = "";
+            switch (rw.status_id) {
+              case 1:
+                badge = `<span class="badge bg-success">Charged</span>`;
+                break;
+              case 2:
+                badge = `<span class="badge bg-danger">Refunded</span>`;
+                break;
+            }
+            cell.innerHTML = badge;
           });
 
         }

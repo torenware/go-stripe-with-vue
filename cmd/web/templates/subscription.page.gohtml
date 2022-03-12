@@ -1,0 +1,64 @@
+{{template "base" . }}
+
+{{define "title"}}
+    Sale Detail
+{{end}}
+
+{{ define "css"}}
+    <style>
+        table#order-table tbody th {
+            width: 100px;
+            text-align: end;
+            padding-right: 10px;
+        }
+
+    </style>
+
+{{ end}}
+{{define "content"}}
+    {{ $order := index .Data "order" }}
+    <h2 class="mt-5">Subscription #{{ $order.ID }}</h2>
+    <hr>
+    <table id="order-table">
+        <tbody>
+        <tr>
+            <th>
+                Customer
+            </th>
+            <td>
+                {{ $order.Customer.FirstName }} {{ $order.Customer.LastName }}
+            </td>
+        </tr>
+        <tr>
+            <th>
+                Item
+            </th>
+            <td>
+                {{ $order.Widget.Name }}
+            </td>
+        </tr>
+        <tr>
+            <th>
+                Charge
+            </th>
+            <td>
+                ${{ formatCurrency $order.Amount }}/month
+            </td>
+        </tr>
+        <tr>
+            <td>
+
+            </td>
+            <td>
+
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+    <div class="mt-4">
+        <button class="btn btn-primary btn-small">Cancel Plan</button>
+        <a href="/admin/all-subscriptions" class="btn btn-warning btn-small">Cancel</a>
+    </div>
+
+{{end}}

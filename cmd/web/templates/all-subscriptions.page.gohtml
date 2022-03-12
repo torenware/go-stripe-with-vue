@@ -28,17 +28,6 @@
             return date.toLocaleDateString();
         }
 
-        function formatAsCurrency(amount, locale, currency) {
-            const units = parseFloat(amount / 100)
-            locale = locale ? locale : "en-CA";
-            currency = currency ? currency : "CAD";
-            const options = {
-                style: 'currency',
-                currency
-            }
-            return units.toLocaleString(locale, options);
-        }
-
         const doIt = async () => {
             let rows = []
             const {token} = getTokenData();
@@ -66,7 +55,7 @@
                     rows.forEach(rw => {
                         row = tbody.insertRow();
                         let cell = row.insertCell()
-                        cell.innerHTML = `<a href="/admin/order/${rw.id}">${rw.id}</a>`;
+                        cell.innerHTML = `<a href="/admin/subscription/${rw.id}">${rw.id}</a>`;
                         cell = row.insertCell()
                         cell.innerText = LocalDate(rw.created_at);
                         cell = row.insertCell()

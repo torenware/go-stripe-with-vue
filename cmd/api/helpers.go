@@ -59,6 +59,7 @@ func (app *application) badRequest(w http.ResponseWriter, r *http.Request, err e
 
 	payload.Error = true
 	payload.Message = err.Error()
+	app.errorLog.Println(payload.Message)
 
 	out, err := json.MarshalIndent(payload, "", "\t")
 	if err != nil {
@@ -69,6 +70,26 @@ func (app *application) badRequest(w http.ResponseWriter, r *http.Request, err e
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write(out)
 	return nil
+}
+
+func (app *application) notFound(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	payload.Error = true
+	payload.Message = "Not found"
+
+	out, err := json.MarshalIndent(payload, "", "\t")
+	if err != nil {
+		app.errorLog.Println("marshalling failed", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	_, _ = w.Write(out)
 }
 
 func (app *application) invalidCredentials(w http.ResponseWriter) error {

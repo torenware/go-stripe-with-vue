@@ -13,7 +13,6 @@
   const stripe_key = "{{ index .StringMap "STRIPE_KEY" }}";
   let stripe;
   let card;
-  const cardMessages = document.getElementById("card-messages");
   const payButton = document.getElementById("pay-button");
   const processing = document.getElementById("processing-payment");
 
@@ -29,19 +28,6 @@
         processing.classList.add("d-none");
     }
 
-   function showCardError(msg) {
-        cardMessages.classList.add("alert-danger");
-        cardMessages.classList.remove("alert-success");
-        cardMessages.classList.remove("d-none");
-        cardMessages.innerText = msg;
-    }
-
-    function showCardSuccess() {
-        cardMessages.classList.remove("alert-danger");
-        cardMessages.classList.add("alert-success");
-        cardMessages.classList.remove("d-none");
-        cardMessages.innerText = "Transaction successful";
-    }
 
   {{ if not $widget }}
     async function completeVTTransaction(result) {

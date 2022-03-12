@@ -1,0 +1,157 @@
+{{template "base" . }}
+
+{{define "title"}}
+    Sale Detail
+{{end}}
+
+{{ define "css"}}
+    <style>
+        table#order-table tbody th {
+            width: 100px;
+            text-align: end;
+            padding-right: 10px;
+        }
+
+    </style>
+
+{{ end}}
+{{define "content"}}
+    {{ $order := index .Data "order" }}
+    <h2 class="mt-5">Order #{{ $order.ID }}</h2>
+    <hr>
+    <table id="order-table">
+        <tbody>
+        <tr>
+            <th>
+                Customer
+            </th>
+            <td>
+                {{ $order.Customer.FirstName }} {{ $order.Customer.LastName }}
+            </td>
+        </tr>
+        <tr>
+            <th>
+                Item
+            </th>
+            <td>
+                {{ $order.Widget.Name }}
+            </td>
+        </tr>
+        <tr>
+            <th>
+                Charge
+            </th>
+            <td>
+                ${{ formatCurrency $order.Amount }}
+            </td>
+        </tr>
+        <tr>
+            <th>
+                Status
+            </th>
+            <td>
+                <span id="refunded" class="badge bg-danger d-none">Refunded</span>
+                <span id="charged" class="badge bg-success d-none">Charged</span>
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+    <div class="mt-4">
+        <button id="refund-btn" class="btn btn-primary btn-small">Refund Purchase</button>
+        <a href="/admin/all-sales" class="btn btn-warning btn-small">Cancel</a>
+    </div>
+
+{{end}}
+
+{{ define "js"}}
+    {{ $order := index .Data "order" }}
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+
+    const confirmDialog = (guardedFunc) => {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Refund payment'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire(
+                    'Refunded',
+                    'Payment has been refunded.',
+                    'success'
+                )
+                guardedFunc();
+            }
+        })
+    }
+    let statusID = {{ $order.StatusID }};
+    const refBtn = document.getElementById("refund-btn");
+
+    const getBadge = statusID => {
+        let badge = "";
+        switch (statusID) {
+            case 1:
+                badge = `<span class="badge bg-success">Charged</span>`;
+                break;
+            case 2:
+                badge = `<span class="badge bg-danger">Refunded</span>`;
+                break;
+        }
+        console.log("badge:", badge);
+        return badge;
+    };
+
+    const doRefund = async () => {
+        const id = {{ $order.ID }};
+        const pi = "{{ $order.Transaction.PaymentIntent }}";
+
+        const payload = {
+            id,
+            pi
+        };
+        const {token} = getTokenData();
+        const requestOptions = {
+            method: 'post',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        }
+        try {
+            const rslt = await fetch("{{ .API }}/api/auth/refund", requestOptions);
+            const data = await rslt.json();
+
+            if (!data.error) {
+                showCardSuccess("Refund was issued.")
+                refBtn.classList.add("d-none");
+                document.getElementById("charged").classList.add("d-none");
+                document.getElementById("refunded").classList.remove("d-none");
+            }
+
+        } catch(err) {
+            console.log(err);
+            showCardError("Problem issuing refund.")
+        }
+    };
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if (statusID === 1) {
+            document.getElementById("charged").classList.remove("d-none");
+            refBtn.addEventListener("click", evt => {
+                confirmDialog(doRefund);
+            });
+        } else {
+            document.getElementById("refunded").classList.remove("d-none");
+            refBtn.classList.add("d-none");
+        }
+    });
+
+</script>
+{{ end }}

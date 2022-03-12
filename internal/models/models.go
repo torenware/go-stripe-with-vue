@@ -444,3 +444,99 @@ order by
 
 	return rslt, nil
 }
+
+// GetOrder gets an expanded order record.
+//    @param int order_id
+//	  @param any return either recurring or not recurring.
+//    2param recurring 0 for not, 1 for recurring. Ignored if any is true.
+func (m *DBModel) GetOrder(id int, any bool,  recurring int) (*Order, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+select
+    o.amount, o.quantity, w.price, t.currency,
+    o.id as order_id, o.widget_id, o.transaction_id,o.customer_id,
+    o.created_at,  o.status_id,
+    w.name as item, w.description, w.is_recurring,
+    t.last_four, t.expiry_month, t.expiry_year,
+    t.payment_intent, t.bank_return_code,
+    c.first_name, c.last_name, c.email
+
+from orders o
+         left join widgets w on (o.widget_id = w.id)
+         left join transactions t on (o.transaction_id = t.id)
+         left join customers c on (o.customer_id= c.id)
+`
+	var row *sql.Row
+	if any {
+		stmt += `
+    where
+        o.id = ?
+    order by
+		o.created_at desc
+`
+		row = m.DB.QueryRowContext(ctx, stmt, id)
+	} else {
+		stmt += `
+    where
+        w.is_recurring = ? and o.id = ?
+    order by
+		o.created_at desc
+`
+		row = m.DB.QueryRowContext(ctx, stmt, recurring, id)
+	}
+	var o Order;
+	err := row.Scan(
+		&o.Amount,
+		&o.Quantity,
+		&o.Widget.Price,
+		&o.Transaction.Currency,
+		&o.ID,
+		&o.WidgetID,
+		&o.TransactionID,
+		&o.CustomerID,
+		&o.CreatedAt,
+		&o.StatusID,
+		&o.Widget.Name,
+		&o.Widget.Description,
+		&o.Widget.IsRecurring,
+		&o.Transaction.LastFour,
+		&o.Transaction.ExpiryMonth,
+		&o.Transaction.ExpiryYear,
+		&o.Transaction.PaymentIntent,
+		&o.Transaction.BankReturnCode,
+		&o.Customer.FirstName,
+		&o.Customer.LastName,
+		&o.Customer.Email,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &o, nil
+}
+
+func (m *DBModel) GetSale(id int) (*Order, error) {
+  return m.GetOrder(id, false, 0)
+}
+
+
+func (m *DBModel) GetSubscription(id int) (*Order, error) {
+	return m.GetOrder(id, false, 1)
+}
+
+func (m *DBModel) SetOrderStatusID(orderID, statusID int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+	update orders set status_id = ? where id = ?
+`
+	_, err := m.DB.ExecContext(ctx, stmt, statusID, orderID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
+}

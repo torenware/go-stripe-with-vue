@@ -437,4 +437,42 @@ func (app *application) AllSubscriptions(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+func (app *application) GetSale(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
+	order, err := app.DB.GetSale(id)
+	if err != nil {
+		app.errorLog.Println(err)
+		http.Redirect(w, r, "/",  http.StatusNotFound)
+		return
+	}
+	data := make(map[string]interface{})
+	data["order"] = order
+	td := templateData{
+		Data: data,
+	}
+	if err = app.renderTemplate(w, r, "sale", &td); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) GetSubscription(w http.ResponseWriter, r *http.Request) {
+	idParam := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idParam)
+	order, err := app.DB.GetSubscription(id)
+	if err != nil {
+		app.errorLog.Println(err)
+		http.Redirect(w, r, "/",  http.StatusNotFound)
+		return
+	}
+	data := make(map[string]interface{})
+	data["order"] = order
+	td := templateData{
+		Data: data,
+	}
+	if err := app.renderTemplate(w, r, "subscription", &td); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
 
