@@ -102,7 +102,6 @@
       try {
         const rslt = await fetch("{{ .API }}/api/auth/list-sales", requestOptions);
         const data = await rslt.json();
-        console.log(data);
         const {rows: orders, last_page: lastPage, total_rows: totalRows, current_page: currentPage} = data;
         rows = orders;
 

@@ -5,6 +5,20 @@
     Subscription Summary
 {{ end }}
 
+{{ define "css"}}
+    <style>
+        li.current a  {
+            background-color: lightcyan;
+        }
+
+        a.disabled {
+            color: lightgray;
+            pointer-events: none;
+        }
+    </style>
+{{end }}
+
+
 {{ define "content"}}
     <h2 class="ht-3">Subscription Summary</h2>
     <table class="table table-striped">
@@ -20,6 +34,11 @@
         </thead>
         <tbody id="sales-rows"></tbody>
     </table>
+    <nav aria-label="navigation">
+        <ul id="pagination" class="pagination">
+        </ul>
+    </nav>
+
 {{ end }}
 
 {{ define "js"}}
@@ -28,21 +47,64 @@
             const date = new Date(dateStr);
             return date.toLocaleDateString();
         }
+        let pageSize = 3;
+        let currentPage = 1;
 
-        const doIt = async () => {
-            let rows = []
+        function fillPagination(currPage, lastPage) {
+            const maxTabs = 5;
+            const drawPageItem = (page) => {
+                let currPageClass = "";
+                if (currPage === page) {
+                    currPageClass = "current";
+                }
+                return `<li class="page-item ${currPageClass}"><a class="page-link" data-page="${page}" href="#">${page}</a></li>\n`;
+            }
+            let firstTab = 1;
+            let lastTab = Math.min(lastPage + 1, firstTab + maxTabs);
+            console.log("indexes:", firstTab, lastTab);
+            let tabBuf = `<li id="prev-pgn" class="page-item"><a class="page-link" data-page="${currPage - 1}" href="#">Previous</a></li>`;
+            for (let t = firstTab; t < lastTab; t++ ) {
+                tabBuf += drawPageItem(t);
+            }
+            tabBuf += `<li id="next-pgn" class="page-item"><a class="page-link" data-page="${currPage + 1}" href="#">Next</a></li>`;
+            const paginator = document.getElementById("pagination");
+            paginator.innerHTML = tabBuf;
+
+            for (let link of paginator.querySelectorAll("li a")) {
+                const itemNum = link.getAttribute("data-page");
+                if (itemNum > 0 && itemNum <= lastPage) {
+                    link.addEventListener("click", evt => {
+                        doIt(parseInt(itemNum));
+                    });
+                } else {
+                    link.classList.add("disabled");
+                }
+            }
+
+        }
+
+        const doIt = async (desiredPage=1) => {
+            let rows = [];
             const {token} = getTokenData();
+            const payload = {
+                page_size: pageSize,
+                current_page: desiredPage,
+            };
+
             const requestOptions = {
                 method: 'post',
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
                 },
+                body: JSON.stringify(payload),
             }
             try {
                 const rslt = await fetch("{{ .API }}/api/auth/list-subs", requestOptions);
-                rows = await rslt.json();
+                const data = await rslt.json();
+                const {rows: orders, last_page: lastPage, total_rows: totalRows, current_page: currentPage} = data;
+                rows = orders;
                 const tbody = document.getElementById("sales-rows");
                 let row;
 
@@ -52,6 +114,7 @@
                     cell.setAttribute("colspan", "7");
                     cell.innerText = "No subscriptions currently available.";
                 } else {
+                    tbody.innerHTML = "";
                     rows.forEach(rw => {
                         row = tbody.insertRow();
                         let cell = row.insertCell()
@@ -82,6 +145,9 @@
                         }
                         cell.innerHTML = badge;
                     });
+
+                    fillPagination(currentPage, lastPage);
+
                 }
             }
             catch(err) {
