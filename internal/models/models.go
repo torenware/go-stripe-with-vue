@@ -1,8 +1,10 @@
 package models
 
 import (
+	"bufio"
 	"context"
 	"database/sql"
+	"os"
 	"strings"
 	"time"
 
@@ -314,6 +316,126 @@ func (m *DBModel) UpdatePasswordForUser(u User, hash string) error {
 	return nil
 }
 
+
+// GetPaginatedOrders gets a page of orders
+// @param pageSize 0 for all, otherwise
+// @returns
+//   list of *order
+//	 last page
+// 	 total rows
+func (m *DBModel) GetPaginatedOrders(isRecurring bool, pageSize, page int ) ([]*Order, int, int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var rslt []*Order
+	var rows *sql.Rows
+	var err error
+	recurring := 0
+
+	if isRecurring {
+		recurring = 1
+	}
+
+	stmt := `
+select
+    o.amount, o.quantity, w.price, t.currency,
+    o.id as order_id, o.widget_id, o.transaction_id,o.customer_id,
+    o.created_at,  o.status_id,
+    w.name as item, w.description,
+    t.last_four, t.expiry_month, t.expiry_year,
+    t.payment_intent, t.bank_return_code,
+    c.first_name, c.last_name, c.email
+
+from orders o
+         left join widgets w on (o.widget_id = w.id)
+         left join transactions t on (o.transaction_id = t.id)
+         left join customers c on (o.customer_id= c.id)
+
+where
+        w.is_recurring = ?
+order by
+		o.created_at desc
+`
+	if pageSize > 0 {
+		stmt += `
+limit ? offset ?
+`
+		offset := (page - 1) * pageSize
+		rows, err = m.DB.QueryContext(ctx, stmt, recurring, pageSize, offset)
+	} else {
+		rows, err = m.DB.QueryContext(ctx, stmt, recurring)
+	}
+	// temp debug
+	writer := bufio.NewWriter(os.Stdout)
+	_,_ = writer.Write([]byte(stmt))
+	_ = writer.Flush()
+	// end debug
+
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+
+	for rows.Next() {
+		var o Order
+		err = rows.Scan(
+			&o.Amount,
+			&o.Quantity,
+			&o.Widget.Price,
+			&o.Transaction.Currency,
+			&o.ID,
+			&o.WidgetID,
+			&o.TransactionID,
+			&o.CustomerID,
+			&o.CreatedAt,
+			&o.StatusID,
+			&o.Widget.Name,
+			&o.Widget.Description,
+			&o.Transaction.LastFour,
+			&o.Transaction.ExpiryMonth,
+			&o.Transaction.ExpiryYear,
+			&o.Transaction.PaymentIntent,
+			&o.Transaction.BankReturnCode,
+			&o.Customer.FirstName,
+			&o.Customer.LastName,
+			&o.Customer.Email,
+		)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+		rslt = append(rslt, &o)
+	}
+
+	// We need the total number of rows in the full set as well.
+	stmt = `
+	select count(*) from orders o 
+	left join widgets w on (w.id = o.widget_id)
+	where w.is_recurring = ?
+`
+	var rowCount int
+	row := m.DB.QueryRowContext(ctx, stmt, recurring)
+	err = row.Scan(&rowCount)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	lastPage := 0
+	if pageSize > 0 {
+		lastPage = rowCount / pageSize + 1
+	}
+
+	return rslt, lastPage, rowCount, nil
+}
+
+func (m *DBModel) GetPaginatedSales(pageSize, page int) ([]*Order, int, int, error) {
+	return m.GetPaginatedOrders(false, pageSize, page)
+}
+
+func (m *DBModel) GetPaginatedSubscriptions(pageSize, page int) ([]*Order, int, int,  error) {
+	return m.GetPaginatedOrders(true, pageSize, page)
+}
 
 func (m *DBModel) GetAllSales() ([]*Order, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

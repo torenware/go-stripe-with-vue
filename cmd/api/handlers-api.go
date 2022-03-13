@@ -516,14 +516,42 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) ListSales(w http.ResponseWriter, r *http.Request) {
-	// fetch search params later.
-	rows, err := app.DB.GetAllSales()
+	var payload struct {
+		PageSize int `json:"page_size"`
+		CurrentPage int `json:"current_page"` // 1 based
+	}
+	err := app.readJSON(w, r, &payload)
 	if err != nil {
 		_ = app.badRequest(w, r, err)
 		return
 	}
 
-	_ = app.writeJSON(w, http.StatusOK, rows)
+	if payload.PageSize > 0 && payload.CurrentPage < 1 {
+		err = errors.New("page must be 1 or greater")
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	rows, lastPage, totalRows, err := app.DB.GetPaginatedSales(payload.PageSize, payload.CurrentPage)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	var out struct {
+		Error bool `json:"error"`
+		Rows []*models.Order `json:"rows"`
+		CurrentPage int `json:"current_page"`
+		LastPage int `json:"last_page"`
+		TotalRows int `json:"total_rows"`
+	}
+
+	out.Rows = rows
+	out.LastPage = lastPage
+	out.TotalRows = totalRows
+	out.CurrentPage = payload.CurrentPage
+
+	_ = app.writeJSON(w, http.StatusOK, out)
 }
 
 func (app *application) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
