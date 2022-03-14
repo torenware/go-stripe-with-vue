@@ -1,0 +1,65 @@
+{{ template "base" . }}
+
+{{ define "title"}}
+ Show User
+{{ end }}
+
+{{ define "css"}}
+    <style>
+        table#order-table tbody th {
+            width: 200px;
+            text-align: end;
+            padding-right: 10px;
+        }
+
+    </style>
+
+{{ end}}
+
+{{define "content"}}
+{{ $user := index .Data "user" }}
+<h2 class="mt-5">User #{{ $user.ID }}</h2>
+<hr>
+<table id="order-table">
+    <tbody>
+    <tr>
+        <th>UserID</th>
+        <td>{{ $user.ID }}</td>
+    </tr>
+    <tr>
+        <th>
+            Name
+        </th>
+        <td>
+            {{ $user.FirstName }} {{ $user.LastName }}
+        </td>
+    </tr>
+    <tr>
+        <th>
+            Email
+        </th>
+        <td>
+            {{ $user.Email }}
+        </td>
+    </tr>
+    <tr>
+        <th>
+            Created
+        </th>
+        <td>
+            {{ rfcDate $user.CreatedAt }}
+        </td>
+    </tr>
+    <tr>
+        <th>
+            Last Modified
+        </th>
+        <td>
+            {{ rfcDate $user.UpdatedAt }}
+        </td>
+    </tr>
+
+    </tbody>
+</table>
+
+{{ end }}

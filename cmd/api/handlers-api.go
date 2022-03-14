@@ -448,6 +448,63 @@ func (app *application) CheckAuthentication(w http.ResponseWriter, r *http.Reque
 
 }
 
+func (app *application) CreateNewUser(w http.ResponseWriter, r *http.Request) {
+	var userInput struct {
+		FirstName string `json:"first_name"`
+		LastName  string `json:"last_name"`
+		Email     string `json:"email"`
+		Password  string `json:"password"`
+	}
+
+	err := app.readJSON(w, r, &userInput)
+	test, _ := json.MarshalIndent(userInput, "", "  ")
+	app.infoLog.Println(string(test))
+
+	// Does the user already exist on this email?
+	user, err := app.DB.GetUserByEmail(userInput.Email)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			_ = app.badRequest(w, r, err)
+			return
+		}
+	}
+	if user.ID != 0 {
+		_ = app.badRequest(w, r, errors.New("email already in use"))
+		return
+	}
+
+	// Might want to validate the rest of these...
+
+	newHash, err := bcrypt.GenerateFromPassword([]byte(userInput.Password), 12)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	var u models.User
+	u.FirstName = userInput.FirstName
+	u.LastName = userInput.LastName
+	u.Email = userInput.Email
+	u.Password = string(newHash)
+
+	uid, err := app.DB.InsertUser(u)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	var out struct {
+		Error   string `json:"error"`
+		Message string `json:"message"`
+		UserID  int    `json:"user_id"`
+	}
+
+	out.Message = fmt.Sprintf("user created at id=%d", uid)
+	out.UserID = uid
+
+	_ = app.writeJSON(w, http.StatusCreated, out)
+}
+
 func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Request) {
 	var txnData struct {
 		PaymentAmount   int    `json:"payment_amount"`
@@ -512,12 +569,12 @@ func (app *application) VTermSuccessHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	txn.ID = id
-	_  = app.writeJSON(w, http.StatusOK, txn)
+	_ = app.writeJSON(w, http.StatusOK, txn)
 }
 
 func (app *application) ListSales(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		PageSize int `json:"page_size"`
+		PageSize    int `json:"page_size"`
 		CurrentPage int `json:"current_page"` // 1 based
 	}
 	err := app.readJSON(w, r, &payload)
@@ -539,11 +596,11 @@ func (app *application) ListSales(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var out struct {
-		Error bool `json:"error"`
-		Rows []*models.Order `json:"rows"`
-		CurrentPage int `json:"current_page"`
-		LastPage int `json:"last_page"`
-		TotalRows int `json:"total_rows"`
+		Error       bool            `json:"error"`
+		Rows        []*models.Order `json:"rows"`
+		CurrentPage int             `json:"current_page"`
+		LastPage    int             `json:"last_page"`
+		TotalRows   int             `json:"total_rows"`
 	}
 
 	out.Rows = rows
@@ -556,7 +613,7 @@ func (app *application) ListSales(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) ListSubscriptions(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
-		PageSize int `json:"page_size"`
+		PageSize    int `json:"page_size"`
 		CurrentPage int `json:"current_page"` // 1 based
 	}
 	err := app.readJSON(w, r, &payload)
@@ -578,11 +635,11 @@ func (app *application) ListSubscriptions(w http.ResponseWriter, r *http.Request
 	}
 
 	var out struct {
-		Error bool `json:"error"`
-		Rows []*models.Order `json:"rows"`
-		CurrentPage int `json:"current_page"`
-		LastPage int `json:"last_page"`
-		TotalRows int `json:"total_rows"`
+		Error       bool            `json:"error"`
+		Rows        []*models.Order `json:"rows"`
+		CurrentPage int             `json:"current_page"`
+		LastPage    int             `json:"last_page"`
+		TotalRows   int             `json:"total_rows"`
 	}
 
 	out.Rows = rows
@@ -593,8 +650,33 @@ func (app *application) ListSubscriptions(w http.ResponseWriter, r *http.Request
 	_ = app.writeJSON(w, http.StatusOK, out)
 }
 
+func (app *application) ListUsers(w http.ResponseWriter, r *http.Request) {
+	// Not going to bother with pagination.
+
+	var output struct {
+		Error   string         `json:"error"`
+		Message string         `json:"message"`
+		Users   []*models.User `json:"users"`
+	}
+
+	users, err := app.DB.GetAllUsers()
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			var emptyRows []*models.User
+			// not really an error
+			output.Message = "no rows found"
+			output.Users = emptyRows
+			_ = app.writeJSON(w, http.StatusOK, output)
+			return
+		}
+		_ = app.badRequest(w, r, err)
+	}
+	output.Users = users
+	_ = app.writeJSON(w, http.StatusOK, output)
+}
+
 func (app *application) SingleSale(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r,"id")
+	idParam := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		app.errorLog.Println("url param must be an integer")
@@ -611,7 +693,7 @@ func (app *application) SingleSale(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) SingleSubscription(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r,"id")
+	idParam := chi.URLParam(r, "id")
 	id, err := strconv.Atoi(idParam)
 	if err != nil {
 		app.errorLog.Println("url param must be an integer")
@@ -629,10 +711,10 @@ func (app *application) SingleSubscription(w http.ResponseWriter, r *http.Reques
 
 func (app *application) RefundCharge(w http.ResponseWriter, r *http.Request) {
 	var chargeToRefund struct {
-		ID int `json:"id"` // order_Id
+		ID            int    `json:"id"` // order_Id
 		PaymentIntent string `json:"pi"`
-		Amount int `json:"amount"` // 0 for full.
-		Currency string `json:"currency"`
+		Amount        int    `json:"amount"` // 0 for full.
+		Currency      string `json:"currency"`
 	}
 	err := app.readJSON(w, r, &chargeToRefund)
 	if err != nil {
@@ -661,8 +743,8 @@ func (app *application) RefundCharge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	card := cards.Card{
-		Secret: app.config.stripe.secret,
-		Key: app.config.stripe.key,
+		Secret:   app.config.stripe.secret,
+		Key:      app.config.stripe.key,
 		Currency: order.Transaction.Currency,
 	}
 	err = card.Refund(chargeToRefund.PaymentIntent, chargeToRefund.Amount)
@@ -677,7 +759,7 @@ func (app *application) RefundCharge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var resp struct {
-		Error bool `json:"error"`
+		Error   bool   `json:"error"`
 		Message string `json:"message"`
 	}
 
@@ -706,8 +788,8 @@ func (app *application) CancelSubscription(w http.ResponseWriter, r *http.Reques
 	}
 
 	card := cards.Card{
-		Secret: app.config.stripe.secret,
-		Key: app.config.stripe.key,
+		Secret:   app.config.stripe.secret,
+		Key:      app.config.stripe.key,
 		Currency: order.Transaction.Currency,
 	}
 	// We stash the subID in the paymentIntent:
@@ -725,7 +807,7 @@ func (app *application) CancelSubscription(w http.ResponseWriter, r *http.Reques
 	}
 
 	var out struct {
-		Error bool `json:"error"`
+		Error   bool   `json:"error"`
 		Message string `json:"message"`
 	}
 	out.Message = "unsubscribe successful"

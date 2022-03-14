@@ -97,8 +97,8 @@ type User struct {
 	LastName  string    `json:"last_name"`
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`
-	CreatedAt time.Time `json:"-"`
-	UpdatedAt time.Time `json:"-"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Customer is the type for users
@@ -250,6 +250,46 @@ func (m *DBModel) InsertCustomer(customer Customer) (int, error) {
 	return int(id), nil
 }
 
+func (m *DBModel) GetAllUsers() ([]*User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+select
+    id, first_name, last_name, email, created_at, updated_at
+
+from users
+order by
+		last_name, first_name
+`
+	var rslt []*User
+	rows, err := m.DB.QueryContext(ctx, stmt)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		_ = rows.Close()
+	}(rows)
+	for rows.Next() {
+		var u User
+		err = rows.Scan(
+			&u.ID,
+			&u.FirstName,
+			&u.LastName,
+			&u.Email,
+			&u.CreatedAt,
+			&u.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		rslt = append(rslt, &u)
+	}
+
+	return rslt, nil
+
+}
+
 func (m *DBModel) GetUserByEmail(email string) (User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -273,6 +313,64 @@ func (m *DBModel) GetUserByEmail(email string) (User, error) {
 	}
 	return u, nil
 }
+
+func (m *DBModel) GetUserByID(id int) (*User, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var u User
+	row := m.DB.QueryRowContext(ctx, `
+		select
+			id, first_name, last_name, email, password,
+		    created_at, updated_at
+		from users
+		where id = ?
+	`, id)
+	err := row.Scan(
+		&u.ID,
+		&u.FirstName,
+		&u.LastName,
+		&u.Email,
+		&u.Password,
+		&u.CreatedAt,
+		&u.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &u, nil
+}
+
+func (m *DBModel) InsertUser(user User) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+		insert into users
+			(first_name, last_name, email, password, created_at, updated_at)
+		values (?, ?, ?, ?, ?, ?)
+	`
+
+	result, err := m.DB.ExecContext(ctx, stmt,
+		user.FirstName,
+		user.LastName,
+		user.Email,
+		user.Password,
+		time.Now(),
+		time.Now(),
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	id, err := result.LastInsertId()
+    if err != nil {
+		return 0, err
+	}
+
+	return int(id), nil
+}
+
 
 func (m *DBModel) Authenticate(email, password string) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

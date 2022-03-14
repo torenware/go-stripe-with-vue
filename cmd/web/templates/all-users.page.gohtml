@@ -1,0 +1,95 @@
+{{ template "base" . }}
+
+{{ define "title" }}
+  All Users
+{{ end }}
+
+{{ define "css" }}
+    <style>
+        li.current a  {
+            background-color: lightcyan;
+        }
+
+        a.disabled {
+            color: lightgray;
+            pointer-events: none;
+        }
+    </style>
+
+{{ end }}
+
+{{ define "content" }}
+<h2 class="mt-3">All Users</h2>
+<hr>
+<table class="table table-striped">
+    <thead>
+    <th>UID</th>
+    <th>Name</th>
+    <th>Email</th>
+    <th>Created</th>
+    <th>Updated</th>
+    </thead>
+    <tbody id="user-rows"></tbody>
+</table>
+
+{{ end }}
+
+{{ define "js" }}
+    <script>
+        function LocalDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString();
+        }
+
+        const drawUsers = async () => {
+            let rows = [];
+            const {token} = getTokenData();
+
+            const requestOptions = {
+                method: 'post',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+            }
+            try {
+                const rslt = await fetch("{{ .API }}/api/auth/list-users", requestOptions);
+                const data = await rslt.json();
+                rows = data.users;
+                const tbody = document.getElementById("user-rows");
+
+                let row;
+                if (rows === null || rows.length === 0) {
+                    row = tbody.insertRow();
+                    let cell = row.insertCell();
+                    cell.setAttribute("colspan", "5");
+                    cell.innerText = "No users found.";
+                } else {
+                    tbody.innerHTML = "";
+                    rows.forEach(rw => {
+                        row = tbody.insertRow();
+                        let cell = row.insertCell()
+                        cell.innerHTML = `<a href="/admin/user/${rw.id}">${rw.id}</a>`;
+                        cell = row.insertCell()
+                        const fullName = `${rw.last_name}, ${rw.first_name}`;
+                        cell.innerText = fullName;
+                        cell = row.insertCell()
+                        cell.innerText = rw.email;
+                        cell = row.insertCell()
+                        cell.innerText = LocalDate(rw.created_at);
+                        cell = row.insertCell()
+                        cell.innerText = LocalDate(rw.updated_at);
+                    });
+                }
+            }
+            catch(err) {
+                console.log("threw: ", err)
+                showCardError(err);
+            }
+
+        }
+        drawUsers();
+
+    </script>
+{{ end }}

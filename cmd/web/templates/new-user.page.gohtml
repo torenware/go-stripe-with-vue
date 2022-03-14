@@ -1,0 +1,179 @@
+{{ template "base" . }}
+
+{{ define "title" }}
+Create New User
+{{ end }}
+
+
+{{ define "content" }}
+
+    <h2>Create New Admin User</h2>
+    <hr>
+    <p>Enter details for new user. Password is temporary, since we will use change-password
+        form for the user to set their own password.
+    </p>
+    <form
+            autocomplete="off"
+            name="reset_form"
+            id="new-user"
+            class="d-block needs-validation"
+            novalidate=""
+    >
+
+
+        <div class="mb-3 nval">
+            <label for="first_name" class="form-label">First Name</label>
+            <input type="text" class="form-control"
+                   id="first_name" name="first_name"
+                   required="" autocomplete="fname-new"
+            >
+            <div class="errors text-danger d-none"></div>
+        </div>
+
+        <div class="mb-3 nval">
+            <label for="last_name" class="form-label">Last Name</label>
+            <input type="text" class="form-control"
+                   id="last_name" name="last_name"
+                   required="" autocomplete="lname-new"
+            >
+            <div class="errors text-danger d-none"></div>
+        </div>
+
+        <div class="mb-3 nval">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control"
+                   id="email" name="email"
+                   required="" autocomplete="email-new"
+            >
+            <div class="errors text-danger d-none"></div>
+        </div>
+
+        <div class="mb-3 nval">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" class="form-control"
+                   id="password" name="password"
+                   required="" autocomplete="password-new"
+            >
+            <div class="errors text-danger d-none"></div>
+        </div>
+
+        <div class="mb-3 nval">
+            <label for="password-verify" class="form-label">Verify Password</label>
+            <input type="password" class="form-control"
+                   id="password-verify" name="password-verify"
+                   required="" autocomplete="password-new"
+            >
+            <div class="errors text-danger d-none"></div>
+        </div>
+
+
+        <a href="javascript:void(0)"
+           id="create-button"
+           class="btn btn-primary"
+           onClick="val()">Create New User</a>
+    </form>
+
+{{ end }}
+
+{{ define "js" }}
+    <script>
+        const nuMessages = document.getElementById("card-messages");
+        function setResetFunc(parent) {
+            const rFunc = function(evt) {
+                const errBlock = parent.querySelector(".errors");
+                if (errBlock) {
+                    if (evt.target.validationMessage) {
+                        errBlock.innerText = evt.target.validationMessage;
+                    }
+                    else {
+                        errBlock.classList.add("d-none");
+                    }
+                }
+            }
+            return rFunc;
+        }
+
+        function showError(msg) {
+            nuMessages.classList.add("alert-danger");
+            nuMessages.classList.remove("alert-success");
+            nuMessages.classList.remove("d-none");
+            nuMessages.innerText = msg;
+        }
+
+        function showSuccess(msg="Password has been reset") {
+            nuMessages.classList.remove("alert-danger");
+            nuMessages.classList.add("alert-success");
+            nuMessages.classList.remove("d-none");
+            nuMessages.innerText = msg;
+        }
+
+        function checkPasswordMatch() {
+            const pw = document.getElementById("password").value;
+            const pwvDom = document.getElementById("password-verify");
+            if (pw !== pwvDom.value) {
+                pwvDom.setCustomValidity("Entered passwords must match");
+            } else {
+                pwvDom.setCustomValidity("");
+            }
+        }
+
+
+        function val() {
+            let form = document.getElementById("new-user");
+            checkPasswordMatch();
+            if (form.checkValidity() === false) {
+                this.event.preventDefault();
+                this.event.stopPropagation();
+                form.classList.add("was-validated");
+                const elems = form.querySelectorAll("div.nval");
+                for (let elem of elems) {
+                    const control = elem.querySelector(":invalid");
+                    if (control && control.validationMessage) {
+                        const errBlock = elem.querySelector(".errors");
+                        if (errBlock) {
+                            errBlock.innerText = control.validationMessage;
+                            errBlock.classList.remove("d-none");
+                            control.onchange = setResetFunc(elem);
+                        }
+                    }
+                }
+                return;
+            }
+            form.classList.add("was-validated");
+
+
+            const payload = {
+                first_name: document.getElementById("first_name").value,
+                last_name: document.getElementById("last_name").value,
+                email: document.getElementById("email").value,
+                password: document.getElementById("password").value,
+            };
+
+            const {token} = getTokenData();
+
+            const requestOptions = {
+                method: 'post',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            }
+
+            fetch("{{ .API }}/api/auth/new-user", requestOptions)
+                .then(response => response.json())
+                .then(response => {
+                    if(!response.error) {
+                        showSuccess(`new user created at uid = ${response.user_id}.`);
+                        setTimeout(() => {
+                            location.href = "/admin/all-users";
+                        }, 2000);
+                    } else {
+                        showError(response.message);
+                    }
+                });
+        }
+
+    </script>
+{{ end }}

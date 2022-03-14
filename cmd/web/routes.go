@@ -9,6 +9,7 @@ import (
 func (app *application) routes() http.Handler {
 	mux := chi.NewMux()
 	mux.Use(SessionLoad)
+	mux.Use(app.logRequest)
 
 	mux.Get("/", app.HomePage)
 	mux.Post("/payment-succeeded", app.PaymentSucceeded)
@@ -37,6 +38,10 @@ func (app *application) routes() http.Handler {
 		mux.Get("/all-subscriptions", app.AllSubscriptions)
 		mux.Get("/order/{id}", app.GetSale)
 		mux.Get("/subscription/{id}", app.GetSubscription)
+
+		mux.Get("/all-users", app.AllUsers)
+		mux.Get("/user/{id:[0-9]+}", app.ShowUser)
+		mux.Get("/user/new", app.NewUserForm)
 	})
 
 	fileServer := http.FileServer(http.Dir("./static/"))

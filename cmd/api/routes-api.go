@@ -37,12 +37,15 @@ func (app *application) routes() http.Handler {
 		mux.Post("/vterm-success-handler", app.VTermSuccessHandler)
 		mux.Post("/list-sales", app.ListSales)
 		mux.Post("/list-subs", app.ListSubscriptions)
+		mux.Post("/list-users", app.ListUsers)
 
 		mux.Get("/sale/{id}", app.SingleSale)
 		mux.Get("/subscription/{id}", app.SingleSubscription)
 
 		mux.Post("/refund", app.RefundCharge)
 		mux.Post("/cancel-subscription", app.CancelSubscription)
+
+		mux.Post("/new-user", app.CreateNewUser)
 	})
 
 	return mux

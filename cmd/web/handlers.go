@@ -475,4 +475,31 @@ func (app *application) GetSubscription(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+func (app *application) AllUsers(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "all-users", nil); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) ShowUser(w http.ResponseWriter, r *http.Request) {
+	uid, err := strconv.Atoi(chi.URLParam(r, "id"))
+	user, err := app.DB.GetUserByID(uid)
+	data := make(map[string]interface{})
+	data["user"] = user
+	td := templateData{
+		Data: data,
+	}
+	if err = app.renderTemplate(w, r, "show-user", &td); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+func (app *application) NewUserForm(w http.ResponseWriter, r *http.Request) {
+	if err := app.renderTemplate(w, r, "new-user", nil); err != nil {
+		app.errorLog.Println(err)
+	}
+}
+
+
+
 

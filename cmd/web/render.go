@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 )
 
 type templateData struct {
@@ -23,6 +24,7 @@ type templateData struct {
 
 var functions = template.FuncMap{
 	"formatCurrency": formatCurrency,
+	"rfcDate":        formatDate,
 }
 
 // Formatter for currency. Unlike the course, I do not prepend the
@@ -30,6 +32,11 @@ var functions = template.FuncMap{
 func formatCurrency(n int) string {
 	f := float32(n) / float32(100)
 	return fmt.Sprintf("%.2f", f)
+}
+
+func formatDate(date time.Time) string {
+	formatted := date.Format(time.RFC822)
+	return formatted
 }
 
 // Embed the templates into the binary. This is a go 1.16 feature.
