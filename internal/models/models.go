@@ -371,6 +371,40 @@ func (m *DBModel) InsertUser(user User) (int, error) {
 	return int(id), nil
 }
 
+func (m *DBModel) EditUser(u User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `
+update users
+set
+	first_name = ?,
+	last_name = ?,
+	email = ?,
+    updated_at = now()
+where id = ?
+`
+	_, err := m.DB.ExecContext(ctx, stmt,u.FirstName, u.LastName, u.Email, u.ID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *DBModel) DeleteUser(id int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	stmt := `delete from users where id = ?`
+	_, err := m.DB.ExecContext(ctx, stmt, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 
 func (m *DBModel) Authenticate(email, password string) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

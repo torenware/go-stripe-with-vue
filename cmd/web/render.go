@@ -18,6 +18,7 @@ type templateData struct {
 	Warning         string
 	Error           string
 	IsAuthenticated int
+	UserID          int
 	API             string
 	CSSVersion      string
 }
@@ -54,6 +55,10 @@ func (app *application) addDefaultData(td *templateData, r *http.Request) *templ
 
 	if session.Exists(r.Context(), "userID") {
 		td.IsAuthenticated = 1
+		userID, ok := session.Get(r.Context(), "userID").(int)
+		if ok {
+			td.UserID = userID
+		}
 	}
 
 	return td

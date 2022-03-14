@@ -61,5 +61,79 @@
 
     </tbody>
 </table>
+<div class="btn-list mt-3 ms-5">
+    <a href="/admin/user/{{ $user.ID}}/edit" id="edit-btn" class="btn btn-secondary">Edit User</a>
+    <button id="delete-btn" class="btn btn-danger">Delete User</button>
+    <a href="/admin/all-users" id="return-to-list" class="btn btn-secondary">Back to List</a>
+</div>
 
+{{ end }}
+
+{{ define "js"}}
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    {{ $user := index .Data "user" }}
+    const userID = {{ $user.ID }};
+
+    const deleteThisUser = async () => {
+        const id = {{ $user.ID }};
+        const {token} = getTokenData();
+        const requestOptions = {
+            method: 'delete',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+        }
+        try {
+            const rslt = await fetch("{{ .API }}/api/auth/user/{{ $user.ID }}", requestOptions);
+            const data = await rslt.json();
+
+            if (!data.error) {
+                showCardSuccess(`User ${id} deleted.`)
+                location.href = "/admin/all-users"
+            }
+
+        } catch(err) {
+            console.log(err);
+            showCardError("Problem deleting user.")
+        }
+    };
+
+
+    const confirmDeletionDialog = (guardedFunc) => {
+        Swal.fire({
+            title: 'Are you sure you want to delete user {{ $user.FirstName }} {{ $user.LastName }}?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Delete User'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire(
+                    'Deleted',
+                    `User {{ $user.FirstName }} {{ $user.LastName }} has been deleted.`,
+                    'success'
+                )
+                guardedFunc();
+            }
+        })
+    }
+
+    document.addEventListener("DOMContentLoaded", evt => {
+        const currentUserID = {{ .UserID }};
+        const deleteBtn = document.getElementById("delete-btn");
+        if (currentUserID === userID) {
+            // self deletion is a bad idea
+            deleteBtn.classList.add("d-none");
+        } else {
+            deleteBtn.addEventListener("click", evt => {
+                confirmDeletionDialog(deleteThisUser);
+            });
+        }
+    });
+</script>
 {{ end }}

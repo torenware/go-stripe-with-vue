@@ -1,17 +1,42 @@
 {{ template "base" . }}
 
 {{ define "title" }}
-Create New User
+    {{ $user := false }}
+    {{ if .Data }}
+        {{ $user = index .Data "user" }}
+    {{ end }}
+    {{ if $user }}
+        Edit User #{{ $user.ID }}
+    {{ else }}
+        Create New User
+    {{end}}
 {{ end }}
 
 
 {{ define "content" }}
+    {{ $user := false }}
+    {{ if .Data }}
+        {{ $user = index .Data "user" }}
+    {{ end }}
 
-    <h2>Create New Admin User</h2>
+    {{ if $user}}
+        <h2>Edit User "{{ $user.FirstName }} {{ $user.LastName }}"</h2>
+    {{ else }}
+        <h2>Create New Admin User</h2>
+    {{end}}
     <hr>
-    <p>Enter details for new user. Password is temporary, since we will use change-password
-        form for the user to set their own password.
-    </p>
+
+    {{ if $user}}
+        <p>Edit details for new user. Password should be reset via the password recovery
+            form, allowing it to be set securely by the user.
+        </p>
+    {{ else }}
+        <p>Enter details for new user. Password is temporary, since we will use change-password
+            form for the user to set their own password.
+        </p>
+    {{end}}
+
+
     <form
             autocomplete="off"
             name="reset_form"
@@ -20,12 +45,18 @@ Create New User
             novalidate=""
     >
 
+        {{ if $user }}
+            <input type="hidden" id="user-id" value="{{ $user.ID }}">
+        {{ end }}
 
         <div class="mb-3 nval">
             <label for="first_name" class="form-label">First Name</label>
             <input type="text" class="form-control"
                    id="first_name" name="first_name"
                    required="" autocomplete="fname-new"
+                   {{ if $user }}
+                       value="{{ $user.FirstName }}"
+                   {{end}}
             >
             <div class="errors text-danger d-none"></div>
         </div>
@@ -35,6 +66,9 @@ Create New User
             <input type="text" class="form-control"
                    id="last_name" name="last_name"
                    required="" autocomplete="lname-new"
+                    {{ if $user }}
+                        value="{{ $user.LastName }}"
+                    {{end}}
             >
             <div class="errors text-danger d-none"></div>
         </div>
@@ -44,10 +78,14 @@ Create New User
             <input type="email" class="form-control"
                    id="email" name="email"
                    required="" autocomplete="email-new"
+                    {{ if $user }}
+                        value="{{ $user.Email }}"
+                    {{end}}
             >
             <div class="errors text-danger d-none"></div>
         </div>
 
+        {{ if not $user }}
         <div class="mb-3 nval">
             <label for="password" class="form-label">Password</label>
             <input type="password" class="form-control"
@@ -65,21 +103,30 @@ Create New User
             >
             <div class="errors text-danger d-none"></div>
         </div>
+        {{end }}
 
 
         <a href="javascript:void(0)"
            id="create-button"
            class="btn btn-primary"
-           onClick="val()">Create New User</a>
+           onClick="val()">{{ if $user}}Update User{{ else }}Create New User{{end}}</a>
     </form>
 
 {{ end }}
 
 {{ define "js" }}
+    {{ $user := false }}
+    {{ if .Data }}
+        {{ $user = index .Data "user" }}
+    {{ end }}
     <script>
+        let uid = 0;
+        {{ if $user }}
+        uid = {{ $user.ID }};
+        {{end }}
         const nuMessages = document.getElementById("card-messages");
         function setResetFunc(parent) {
-            const rFunc = function(evt) {
+            return function(evt) {
                 const errBlock = parent.querySelector(".errors");
                 if (errBlock) {
                     if (evt.target.validationMessage) {
@@ -90,7 +137,6 @@ Create New User
                     }
                 }
             }
-            return rFunc;
         }
 
         function showError(msg) {
@@ -120,7 +166,9 @@ Create New User
 
         function val() {
             let form = document.getElementById("new-user");
-            checkPasswordMatch();
+            if (!uid) {
+                checkPasswordMatch();
+            }
             if (form.checkValidity() === false) {
                 this.event.preventDefault();
                 this.event.stopPropagation();
@@ -146,8 +194,10 @@ Create New User
                 first_name: document.getElementById("first_name").value,
                 last_name: document.getElementById("last_name").value,
                 email: document.getElementById("email").value,
-                password: document.getElementById("password").value,
             };
+            if (!uid) {
+                payload.password = document.getElementById("password").value;
+            }
 
             const {token} = getTokenData();
 
@@ -160,12 +210,22 @@ Create New User
                 },
                 body: JSON.stringify(payload),
             }
+            let endpoint;
+            {{ if $user }}
+                endpoint = "{{ .API }}/api/auth/user/{{$user.ID}}";
+            {{ else }}
+               endpoint = "{{ .API }}/api/auth/new-user";
+            {{ end }}
 
-            fetch("{{ .API }}/api/auth/new-user", requestOptions)
+            fetch(endpoint, requestOptions)
                 .then(response => response.json())
                 .then(response => {
                     if(!response.error) {
-                        showSuccess(`new user created at uid = ${response.user_id}.`);
+                        {{ if $user }}
+                            showSuccess(`user updated.`);
+                        {{ else }}
+                            showSuccess(`new user created at uid = ${response.user_id}.`);
+                        {{ end }}
                         setTimeout(() => {
                             location.href = "/admin/all-users";
                         }, 2000);

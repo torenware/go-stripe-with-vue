@@ -814,3 +814,115 @@ func (app *application) CancelSubscription(w http.ResponseWriter, r *http.Reques
 
 	_ = app.writeJSON(w, http.StatusOK, out)
 }
+
+
+func (app *application) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	uidStr := chi.URLParam(r, "id")
+	uid, err := strconv.Atoi(uidStr)
+	if err != nil {
+		_ = app.badRequest(w, r, errors.New("URI must specify ID"))
+		return
+	}
+	var payload models.User
+	err = app.readJSON(w, r, &payload)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+	// I'll allow for partial results by taking the existing user object and folding in
+	// the changes.
+	user, err := app.DB.GetUserByID(uid)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	if payload.FirstName != "" {
+		user.FirstName = payload.FirstName
+	}
+
+	if payload.LastName != "" {
+		user.LastName = payload.LastName
+	}
+
+	if payload.Email != "" {
+		user.Email = payload.Email
+	}
+
+	err = app.DB.EditUser(*user)
+	if err != nil {
+		_ = app.badRequest(w, r, err)
+		return
+	}
+
+	var out struct {
+		Error   string `json:"error"`
+		Message string `json:"message"`
+	}
+
+	out.Message = "user updated"
+	_ = app.writeJSON(w, http.StatusOK, out)
+}
+
+func (app *application) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	uidStr := chi.URLParam(r, "id")
+	uid, err := strconv.Atoi(uidStr)
+	if err != nil {
+		_ = app.badRequest(w, r, errors.New("URI must specify ID"))
+		return
+	}
+
+	user, err := app.DB.GetUserByID(uid)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.notFound(w, r)
+		return
+	}
+
+	err = app.DB.DeleteUser(user.ID)
+
+	var out struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
+	status := http.StatusOK // optimism
+	if err != nil {
+		out.Error = true
+		out.Message = fmt.Sprintf("deletion of user %d failed", user.ID)
+		app.errorLog.Println(err)
+		status = http.StatusBadRequest
+	} else {
+		out.Message = fmt.Sprintf("user %d was deleted", user.ID)
+	}
+
+	_ = app.writeJSON(w, status, out)
+}
+
+
+func (app *application) SingleUser(w http.ResponseWriter, r *http.Request) {
+	uidStr := chi.URLParam(r, "id")
+	uid, err := strconv.Atoi(uidStr)
+	if err != nil {
+		_ = app.badRequest(w, r, errors.New("URI must specify ID"))
+		return
+	}
+	user, err := app.DB.GetUserByID(uid)
+	if err != nil {
+		app.errorLog.Println(err)
+		app.notFound(w, r)
+		return
+	}
+	// don't return password hash
+	user.Password = ""
+
+	var out struct {
+		Error   string       `json:"error"`
+		Message string       `json:"message"`
+		User    *models.User `json:"user"`
+	}
+
+	out.User = user
+	_ = app.writeJSON(w, http.StatusOK, out)
+}
+

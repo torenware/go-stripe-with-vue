@@ -41,6 +41,7 @@ func (app *application) routes() http.Handler {
 
 		mux.Get("/all-users", app.AllUsers)
 		mux.Get("/user/{id:[0-9]+}", app.ShowUser)
+		mux.Get("/user/{id:[0-9]+}/edit", app.EditUser)
 		mux.Get("/user/new", app.NewUserForm)
 	})
 
