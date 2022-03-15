@@ -113,7 +113,7 @@
 
       for (let elem of elems) {
         const input = elem.querySelector("input");
-        input.addEventListener("input", validator(elem));
+        input.addEventListener("change", validator(elem));
         input.addEventListener("blur", validator(elem));
       }
   }
