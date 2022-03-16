@@ -1,10 +1,8 @@
 package models
 
 import (
-	"bufio"
 	"context"
 	"database/sql"
-	"os"
 	"strings"
 	"time"
 
@@ -497,12 +495,7 @@ limit ? offset ?
 	} else {
 		rows, err = m.DB.QueryContext(ctx, stmt, recurring)
 	}
-	// temp debug
-	writer := bufio.NewWriter(os.Stdout)
-	_,_ = writer.Write([]byte(stmt))
-	_ = writer.Flush()
-	// end debug
-
+	
 	if err != nil {
 		return nil, 0, 0, err
 	}

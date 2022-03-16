@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"github.com/torenware/go-stripe/internal/models"
 	"html/template"
 	"net/http"
 	"time"
@@ -19,6 +20,7 @@ type templateData struct {
 	Error           string
 	IsAuthenticated int
 	UserID          int
+	User            *models.User
 	API             string
 	CSSVersion      string
 }
@@ -58,6 +60,11 @@ func (app *application) addDefaultData(td *templateData, r *http.Request) *templ
 		userID, ok := session.Get(r.Context(), "userID").(int)
 		if ok {
 			td.UserID = userID
+			user, err := app.DB.GetUserByID(userID)
+			if err == nil {
+				user.Password = ""
+				td.User = user
+			}
 		}
 	}
 

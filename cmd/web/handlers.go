@@ -339,13 +339,15 @@ func (app *application) ReceiptBronze(w http.ResponseWriter, r *http.Request) {
 
 // Authentication
 func (app *application) LoginPage(w http.ResponseWriter, r *http.Request) {
+	// Make sure we are not logged in while displaying this
+	_ = session.Destroy(r.Context())
+	_ = session.RenewToken(r.Context())
 	if err := app.renderTemplate(w, r, "login", nil); err != nil {
 		app.errorLog.Println(err)
 	}
 }
 
 func (app *application) ProcessLogin(w http.ResponseWriter, r *http.Request) {
-	session.RenewToken(r.Context()) // best practice
 	err := r.ParseForm()
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)

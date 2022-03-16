@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-chi/chi/v5"
+	"github.com/sethvargo/go-password/password"
 	"github.com/stripe/stripe-go/v72"
 	"net/http"
 	"strconv"
@@ -236,6 +237,22 @@ func (app *application) SaveTxn(txn models.Transaction) (int, error) {
 
 // Authentication
 
+func (app *application) sendPasswordEmail(user models.User) error {
+
+	link := fmt.Sprintf("%s/reset-password?email=%s", app.config.frontend, user.Email)
+	sign := urlsigner.Signer{
+		Secret: []byte(app.config.secretkey),
+	}
+	signedToken := sign.GenerateTokenFromString(link)
+	var data struct {
+		Link string
+	}
+	data.Link = signedToken
+
+	app.infoLog.Println("Email would be sent here")
+	return  app.SendMail("info@widgets.com", user.Email, "Password Reset Request", "password-reset", data)
+}
+
 func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		Email string `json:"email"`
@@ -247,6 +264,11 @@ func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var output struct {
+		Error   bool   `json:"error"`
+		Message string `json:"message"`
+	}
+
 	// See if we have such a user
 	user, err := app.DB.GetUserByEmail(payload.Email)
 	if err != nil {
@@ -254,42 +276,17 @@ func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// We say we are sending even if we are not...
-	var output struct {
-		Error   bool   `json:"error"`
-		Message string `json:"message"`
+	err = app.sendPasswordEmail(user)
+	if err != nil {
+		app.errorLog.Println(err)
+		_ = app.badRequest(w, r, err)
+		return
 	}
 
-	var data struct {
-		Link string
-	}
-
-	link := fmt.Sprintf("%s/reset-password?email=%s", app.config.frontend, payload.Email)
-	sign := urlsigner.Signer{
-		Secret: []byte(app.config.secretkey),
-	}
-
-	signedLink := sign.GenerateTokenFromString(link)
-	data.Link = signedLink
-
-	if user.ID != 0 {
-		app.infoLog.Println("Email would be sent here")
-		// send mail
-		err = app.SendMail("info@widgets.com", user.Email, "Password Reset Request", "password-reset", data)
-		if err != nil {
-			app.errorLog.Println(err)
-			_ = app.badRequest(w, r, err)
-			return
-		}
-		output.Error = false
-		output.Message = "We've sent you an email with a link"
-	} else {
-		output.Error = true
-		output.Message = "Sorry! We cannot find you in our system."
-	}
+	output.Error = false
+	output.Message = "We've sent you an email with a link"
 
 	_ = app.writeJSON(w, http.StatusOK, output)
-
 }
 
 func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
@@ -457,8 +454,6 @@ func (app *application) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err := app.readJSON(w, r, &userInput)
-	test, _ := json.MarshalIndent(userInput, "", "  ")
-	app.infoLog.Println(string(test))
 
 	// Does the user already exist on this email?
 	user, err := app.DB.GetUserByEmail(userInput.Email)
@@ -471,6 +466,16 @@ func (app *application) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 	if user.ID != 0 {
 		_ = app.badRequest(w, r, errors.New("email already in use"))
 		return
+	}
+
+	// No password? generate a random one
+	if userInput.Password == "" {
+		pw, err := password.Generate(20, 3,2,false, true)
+		if err != nil {
+			_ = app.badRequest(w, r, err)
+			return
+		}
+		userInput.Password = pw
 	}
 
 	// Might want to validate the rest of these...
@@ -494,13 +499,22 @@ func (app *application) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var out struct {
-		Error   string `json:"error"`
+		Error   bool `json:"error"`
 		Message string `json:"message"`
 		UserID  int    `json:"user_id"`
 	}
 
-	out.Message = fmt.Sprintf("user created at id=%d", uid)
+	// User exists. Send a replacement email if needed.
 	out.UserID = uid
+	newUser, err := app.DB.GetUserByID(uid)
+	err = app.sendPasswordEmail(*newUser)
+	if err != nil {
+		app.errorLog.Println("user created, but email notification failed", err)
+		out.Message = "user created, but password email failed to go out"
+		out.Error = true
+	} else {
+		out.Message = fmt.Sprintf("user created at id=%d", uid)
+	}
 
 	_ = app.writeJSON(w, http.StatusCreated, out)
 }

@@ -67,6 +67,7 @@
         </ul>
         <ul class="navbar-nav mb-auto mb-2 mb-lg-0">
           {{ if .IsAuthenticated }}
+            <li class="mt-2 me-3">Welcome, {{ .User.FirstName }} {{ .User.LastName }}</li>
             <li><a  class="nav-link" href="/logout">Logout</a></li>
           {{ else }}
             <li><a  class="nav-link" href="/login">Login</a></li>
