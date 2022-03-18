@@ -19,6 +19,12 @@ func (app *application) clientError(w http.ResponseWriter, status int) {
 	http.Error(w, http.StatusText(status), status)
 }
 
+//
+func (app *application) setFlashAndGoHome(w http.ResponseWriter, r *http.Request, msg string, retCode int) {
+	SetFlash(w, "flash", []byte(msg))
+	http.Redirect(w, r, "/", retCode)
+}
+
 func (app *application) HomePage(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "home", nil); err != nil {
 		app.errorLog.Println(err)
@@ -381,6 +387,7 @@ func (app *application) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	theURL := r.RequestURI
 	testURL := fmt.Sprintf("%s%s", app.config.frontend, theURL)
+	app.infoLog.Println(testURL)
 
 	signer := urlsigner.Signer{
 		Secret: []byte(app.config.secretkey),
@@ -390,12 +397,13 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	if !valid {
 		app.errorLog.Println("Invalid url - tampering detected")
+		app.setFlashAndGoHome(w, r, "Sorry! There was a problem processing your link.", http.StatusSeeOther)
 		return
 	}
 
 	// Token expires at 60 minutes
 	if signer.Expired(testURL, 60) {
-		app.clientError(w, http.StatusBadRequest)
+		app.setFlashAndGoHome(w, r, "Sorry! Your reset link has expired", http.StatusSeeOther)
 		return
 	}
 

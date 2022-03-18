@@ -15,6 +15,22 @@
     {{end}}
     </title>
 
+    <style>
+      #card-messages {
+        width: 40rem;
+      }
+
+      @keyframes fadeOut {
+        0% {opacity: 1;}
+        100% {opacity: 0;}
+      }
+
+      .fade-away {
+        opacity: 0;
+        animation: fadeOut 8s ease-in;
+      }
+    </style>
+
     {{ block "css" . }}
 
     {{ end}}
@@ -77,8 +93,13 @@
       </div>
     </div>
   </nav>
-  <div class="alert alert-danger text-center mx-5 d-none" id="card-messages"></div>
   <div class="container">
+    <div class="row">
+      <div class="col" style="width: 100%">
+        <div class="alert alert-danger text-center mx-auto mt-3 d-none" id="card-messages"></div>
+      </div>
+    </div>
+
     <div class="row">
       <div class="col">
       {{ block "content" . }}
@@ -89,8 +110,9 @@
   </div>
 
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-  <script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js" integrity="sha256-0H3Nuz3aug3afVbUlsu12Puxva3CP4EhJtPExqs54Vg=" crossorigin="anonymous"></script>
+<script>
 
     // window.addEventListener('load', (event) => {
     //   updateMenusOnLoad();
@@ -115,6 +137,14 @@
     //   }
     // }
 
+    document.addEventListener("DOMContentLoaded", evt => {
+      const flashVal = Cookies.get("flash");
+      if (flashVal) {
+        const decoded = decodeURIComponent(atob(flashVal));
+        showCardError(decoded);
+        Cookies.remove("flash");
+      }
+    });
     function loginUserToSite(auth_obj) {
       localStorage.setItem("token", auth_obj.token);
       localStorage.setItem("expiry", auth_obj.expiry);
@@ -172,12 +202,22 @@
       location.href = "/logout";
     }
 
-    function showCardError(msg) {
+    function doCardFade(card, fadeAfter=10) {
+      card.classList.add("fade-away");
+      setTimeout(() => {
+        card.classList.add("d-none");
+        card.classList.remove("fade-away");
+      }, fadeAfter * 1000);
+    }
+
+    // showCardError, with fadeAfter in seconds.
+    function showCardError(msg, fadeAfter=10) {
       const cardMessages = document.getElementById("card-messages");
       cardMessages.classList.add("alert-danger");
       cardMessages.classList.remove("alert-success");
       cardMessages.classList.remove("d-none");
       cardMessages.innerText = msg;
+      doCardFade(cardMessages, fadeAfter);
     }
 
     function showCardSuccess() {
@@ -186,6 +226,7 @@
       cardMessages.classList.add("alert-success");
       cardMessages.classList.remove("d-none");
       cardMessages.innerText = "Transaction successful";
+      doCardFade(cardMessages);
     }
 
 

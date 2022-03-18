@@ -495,7 +495,7 @@ limit ? offset ?
 	} else {
 		rows, err = m.DB.QueryContext(ctx, stmt, recurring)
 	}
-	
+
 	if err != nil {
 		return nil, 0, 0, err
 	}

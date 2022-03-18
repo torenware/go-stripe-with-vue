@@ -249,6 +249,11 @@ func (app *application) sendPasswordEmail(user models.User) error {
 	}
 	data.Link = signedToken
 
+	// test: validate generated link.
+	worked := sign.VerifyToken(signedToken)
+	app.infoLog.Println("it worked?", worked)
+	app.infoLog.Println(signedToken)
+
 	app.infoLog.Println("Email would be sent here")
 	return  app.SendMail("info@widgets.com", user.Email, "Password Reset Request", "password-reset", data)
 }
@@ -325,16 +330,6 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// see if it is valid
-	err = bcrypt.CompareHashAndPassword(newHash, []byte(payload.Password))
-	app.infoLog.Println("CHAP returned", err)
-
-	newUser, _ := app.DB.GetUserByEmail(payload.Email)
-	if newUser.Password != string(newHash) {
-		app.infoLog.Println("pw correctly reset")
-	} else {
-		app.infoLog.Println("pw got munged!!")
-	}
 
 	err = app.DB.UpdatePasswordForUser(user, string(newHash))
 	if err != nil {
@@ -348,7 +343,7 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	output.Error = false
-	output.Message = "Email has been changed"
+	output.Message = "Password has been changed"
 
 	_ = app.writeJSON(w, http.StatusOK, output)
 
