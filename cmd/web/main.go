@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/gob"
 	"flag"
 	"fmt"
@@ -15,10 +16,15 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/torenware/go-stripe/internal/driver"
 	"github.com/torenware/go-stripe/internal/models"
+
+	vueglue "github.com/torenware/vite-go"
 )
 
 const version = "1.0.0"
 const cssVersion = "1" // used for versioning assets
+
+//go:embed "dist"
+var dist embed.FS
 
 var session *scs.SessionManager
 
@@ -46,6 +52,7 @@ type application struct {
 	version       string
 	DB            models.DBModel
 	Session       *scs.SessionManager
+	vueglue       *vueglue.VueGlue
 }
 
 func (app *application) serve() error {
@@ -78,7 +85,7 @@ func main() {
 	flag.Parse()
 
 	// https://preslav.me/2020/11/10/use-dotenv-files-when-developing-your-golang-apps/
-	godotenv.Load(".env.local")
+	_ = godotenv.Load(".env.local")
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stdout, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
@@ -98,6 +105,7 @@ func main() {
 	}
 	infoLog.Println("Database is UP")
 	defer conn.Close()
+
 
 	// crypto keys
 	config.secretkey = os.Getenv("SECRET_KEY")
@@ -125,7 +133,11 @@ func main() {
 		Session:       session,
 	}
 
-	err = app.serve()
+    // set up the Vue loader
+    glue, err := vueglue.NewVueGlue(dist, "dist")
+    app.vueglue = glue
+
+    err = app.serve()
 	if err != nil {
 		app.errorLog.Println(err)
 		log.Fatal()

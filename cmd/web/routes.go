@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/fs"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -47,6 +48,13 @@ func (app *application) routes() http.Handler {
 
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
+
+	sub, err := fs.Sub(dist, "dist/assets")
+	if err != nil {
+		app.errorLog.Println(err)
+	}
+	assetServer := http.FileServer(http.FS(sub))
+	mux.Handle("/assets/*", http.StripPrefix("/assets", assetServer))
 
 	return mux
 }

@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"github.com/torenware/go-stripe/internal/models"
+	vueglue "github.com/torenware/vite-go"
 	"html/template"
 	"net/http"
 	"time"
@@ -14,6 +15,7 @@ type templateData struct {
 	IntMap          map[string]int
 	FloatMap        map[string]float32
 	Data            map[string]interface{}
+	VueGlue         *vueglue.VueGlue
 	CSRFToken       string
 	Flash           string
 	Warning         string
@@ -54,6 +56,10 @@ func (app *application) addDefaultData(td *templateData, r *http.Request) *templ
 	td.StringMap["STRIPE_KEY"] = app.config.stripe.key
 	td.StringMap["STRIPE_SECRET"] = app.config.stripe.secret
 	td.API = app.config.api
+
+    if app.vueglue != nil {
+        td.VueGlue = app.vueglue
+    }
 
 	if session.Exists(r.Context(), "userID") {
 		td.IsAuthenticated = 1

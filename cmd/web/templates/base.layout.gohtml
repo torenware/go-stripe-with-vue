@@ -15,6 +15,11 @@
     {{end}}
     </title>
 
+    {{ $vue := .VueGlue }}
+    {{ if $vue }}
+      {{ $vue.RenderTags }}
+    {{ end }}
+
     <style>
       #card-messages {
         width: 40rem;
