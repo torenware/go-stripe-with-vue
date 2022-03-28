@@ -7,6 +7,16 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+func ServeVueAssets(mux *chi.Mux, fileSys fs.ReadFileFS, pathToAssets string) error {
+	sub, err := fs.Sub(fileSys, pathToAssets)
+	if err != nil {
+		return err
+	}
+	assetServer := http.FileServer(http.FS(sub))
+	mux.Handle("/assets/*", http.StripPrefix("/assets", assetServer))
+	return nil
+}
+
 func (app *application) routes() http.Handler {
 	mux := chi.NewMux()
 	mux.Use(SessionLoad)
@@ -49,12 +59,9 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
-	sub, err := fs.Sub(dist, "dist/assets")
+	err := ServeVueAssets(mux, dist, "dist/assets")
 	if err != nil {
 		app.errorLog.Println(err)
 	}
-	assetServer := http.FileServer(http.FS(sub))
-	mux.Handle("/assets/*", http.StripPrefix("/assets", assetServer))
-
 	return mux
 }
