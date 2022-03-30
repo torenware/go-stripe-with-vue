@@ -137,7 +137,7 @@ div.invalid label {
 }
 
 div.invalid input {
-  background-color: rgba(230, 139, 166, 0.2);
+  background-color: rgba(220, 170, 185, 0.2);
 }
 
 div.errors {

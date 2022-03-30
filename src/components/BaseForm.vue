@@ -14,8 +14,8 @@
 </template>
 
 <script setup lang="ts">
-import { stringifyStyle } from '@vue/shared';
-import { ref, Ref, onMounted, computed, reactive } from 'vue'
+import { ref, Ref, onMounted, computed } from 'vue';
+import { FlashData } from '../types/forms';
 
 const errorClasses = ref(new Map<string, string>());
 
@@ -44,6 +44,24 @@ const props = withDefaults(defineProps<{
 });
 
 type FormControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+
+// TODO factor into mixin.
+const sendFlash = (msg: string, alertType: string = "alert-danger") => {
+  const payload: CustomEventInit<FlashData> = {
+    detail: {
+      msg,
+      alertType
+    }
+  };
+  const evt = new CustomEvent<FlashData>("flashMsg", payload);
+  const flashPanel = document.querySelector("#flashPanel");
+  if (flashPanel) {
+    flashPanel.dispatchEvent(evt);
+  } else {
+    console.log("cannot find the #flashPanel");
+  }
+
+}
 
 const validateRadioGroups = (form: HTMLFormElement) => {
   const values = checkRadioGroups(form);
@@ -160,6 +178,8 @@ const processSubmit = (form: HTMLFormElement) => {
     });
 
     props.process(values, form);
+  } else {
+    sendFlash("Your data has errors", "alert-danger");
   }
 }
 
