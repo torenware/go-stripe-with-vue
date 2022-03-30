@@ -3,6 +3,7 @@ ifneq (,$(wildcard ./.env.local))
     export
 endif
 
+VUE_PIECES := "src "
 # STRIPE_SECRET=
 # STRIPE_KEY=
 # GOSTRIPE_PORT=4000
@@ -36,7 +37,7 @@ build_back:
 start: start_front start_back
 
 ## start_front: starts the front end
-start_front: build_front
+start_front: build-js build_front
 	@echo "Starting the front end..."
 	@env STRIPE_KEY=${STRIPE_KEY} STRIPE_SECRET=${STRIPE_SECRET} ./dist/gostripe -port=${GOSTRIPE_PORT} &
 	@echo "Front end running!"
@@ -64,4 +65,10 @@ stop_back:
 	@echo "Stopping the back end..."
 	@-pkill -SIGTERM -f "gostripe_api -port=${API_PORT}"
 	@echo "Stopped back end"
+
+build-js:  vite.config.ts $(shell find src -type f -name '*.vue' -o -name '*.js' -o -name '*.ts')
+	@echo Rebuilding js front end code
+	@- rm -rf cmd/web/dist
+	@yarn build
+
 

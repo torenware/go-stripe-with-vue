@@ -11,19 +11,19 @@ import (
 )
 
 type templateData struct {
-	StringMap       map[string]string
-	IntMap          map[string]int
-	FloatMap        map[string]float32
-	Data            map[string]interface{}
+	StringMap       map[string]string      `json:"string_vals,omitempty"`
+	IntMap          map[string]int         `json:"int_vals,omitempty"`
+	FloatMap        map[string]float32     `json:"float_vals,omitempty"`
+	Data            map[string]interface{} `json:"misc_vals,omitempty"`
 	VueGlue         *vueglue.VueGlue
 	CSRFToken       string
-	Flash           string
+	Flash           string `json:"flash,omitempty"`
 	Warning         string
 	Error           string
-	IsAuthenticated int
-	UserID          int
+	IsAuthenticated int `json:"is_authenticated,omitempty"`
+	UserID          int `json:"user_id,omitempty"`
 	User            *models.User
-	API             string
+	API             string `json:"api,omitempty"`
 	CSSVersion      string
 }
 
@@ -43,6 +43,7 @@ func formatDate(date time.Time) string {
 	formatted := date.Format(time.RFC822)
 	return formatted
 }
+
 
 // Embed the templates into the binary. This is a go 1.16 feature.
 // the "go:embed" command should be immediately after the double slashes,

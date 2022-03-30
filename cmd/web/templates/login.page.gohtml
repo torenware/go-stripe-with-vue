@@ -5,9 +5,14 @@
 {{end}}
 
 {{define "content"}}
+{{ $vue := .VueGlue }}
 <h2>Login to the Site</h2>
 <hr>
+  {{ if $vue}}
+  <div data-entryp="login"></div>
+  {{ else }}
   <form
+    data-entryp="login"
     action="/process-login"
     method="post"
     autocomplete="off"
@@ -51,6 +56,7 @@
   </div>
 
   </form>
+  {{ end }}
 
 
 {{ end }}

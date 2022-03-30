@@ -1,6 +1,7 @@
 dist/
 *~
 *.bak
+*.log
 
 .env
 .env.*

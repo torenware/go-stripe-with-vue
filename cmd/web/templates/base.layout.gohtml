@@ -15,6 +15,13 @@
     {{end}}
     </title>
 
+    <script>
+      const tmpVars = {};
+      tmpVars.api = "{{.API}}";
+      tmpVars.uid = {{ .UserID }};
+      console.log("passed down", tmpVars);
+    </script>
+
     {{ $vue := .VueGlue }}
     {{ if $vue }}
       {{ $vue.RenderTags }}
