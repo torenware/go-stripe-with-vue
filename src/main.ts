@@ -1,25 +1,25 @@
-import { createApp, App } from 'vue';
+import { createApp, App as BaseApp } from 'vue';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
-// import App from './App.vue';
+import App from './App.vue';
 import Login from './blocks/LoginBlock.vue';
 import FlashPanel from './components/FlashPanel.vue';
+import TableTest from './blocks/TableTest.vue';
 
 type EPData = {
-  app: App;
+  app: BaseApp;
   props?: Record<string, string>;
 };
 type EPLookup = Record<string, EPData>;
 
 const keys: EPLookup = {};
-//keys['app'] = { app: App };
-keys['login'] = { app: Login as unknown as App };
+keys['app'] = { app: App as unknown as BaseApp };
+keys['login'] = { app: Login as unknown as BaseApp };
+keys['table'] = { app: TableTest as unknown as BaseApp };
 keys['flash'] = {
-  app: FlashPanel as unknown as App,
+  app: FlashPanel as unknown as BaseApp,
   props: { id: 'flashPanel' },
 };
-
-console.log('main ran');
 
 const appMounts = document.querySelectorAll('[data-entryp]');
 appMounts.forEach((mp) => {
