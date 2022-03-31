@@ -5,6 +5,7 @@ import App from './App.vue';
 import Login from './blocks/LoginBlock.vue';
 import FlashPanel from './components/FlashPanel.vue';
 import TableTest from './blocks/TableTest.vue';
+import SubscribersTable from './blocks/SubscribersTable.vue';
 
 type EPData = {
   app: BaseApp;
@@ -15,6 +16,7 @@ type EPLookup = Record<string, EPData>;
 const keys: EPLookup = {};
 keys['app'] = { app: App as unknown as BaseApp };
 keys['login'] = { app: Login as unknown as BaseApp };
+keys['subs'] = { app: SubscribersTable as unknown as BaseApp };
 keys['table'] = { app: TableTest as unknown as BaseApp };
 keys['flash'] = {
   app: FlashPanel as unknown as BaseApp,

@@ -1,3 +1,4 @@
+const tmpl = `
 <template>
   <table class="table">
     <thead>
@@ -17,19 +18,23 @@
       </slot>
     </tbody>
   </table>
-</template>
+</template>`;
 
-<script>
-
-export default {
-  props: {
-    data: Array,
-    headers: Array,
-  },
-  setup(props) {
-    return {
-
-    }
-  }
-};
-</script>
+export default function componentDef<T>() {
+  return {
+    template: tmpl,
+    props: {
+      data: {
+        type: Object as () => T[],
+        required: true,
+      },
+      headers: {
+        type: Object as () => string[],
+        required: true,
+      },
+    },
+    setup(/** props, context **/) {
+      return {};
+    },
+  };
+}
