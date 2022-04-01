@@ -4,6 +4,8 @@
     :headers="headers"
     :current-page="currentPage"
     :last-page="lastPage"
+    :num-rows="3"
+    :num-tabs="3"
     :total-rows="totalRows"
     @page-change="pageChange"
   >

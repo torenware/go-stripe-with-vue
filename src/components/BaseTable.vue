@@ -23,6 +23,8 @@
       :current-page="currentPage"
       :total-rows="totalRows"
       :last-page="lastPage"
+      :num-tabs="numTabs"
+      :num-rows="numRows"
     ></Paginator>
   </section>
 </template>
@@ -50,6 +52,16 @@ export default {
       required: false,
       default: 0,
     },
+    numTabs: {
+      type: Number,
+      required: false,
+      default: 4,
+    },
+    numRows: {
+      type: Number,
+      required: false,
+      default: 20,
+    }
 
   },
   setup(props, ctx) {
