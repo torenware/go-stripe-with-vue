@@ -2,7 +2,13 @@
   <nav v-if="lastPage > 1" aria-label="Page navigation example">
     <ul class="pagination">
       <li class="page-item">
-        <a class="page-link" href="#" :class="disabledClass(prevDisabled)" aria-label="Previous">
+        <a
+          class="page-link"
+          href="#"
+          :class="disabledClass(prevDisabled)"
+          @click="changePage(currentPage - 1)"
+          aria-label="Previous"
+        >
           <span aria-hidden="true">&laquo;</span>
         </a>
       </li>
@@ -15,7 +21,13 @@
         >{{ tab.page }}</a>
       </li>
       <li class="page-item">
-        <a class="page-link" href="#" :class="disabledClass(nextDisabled)" aria-label="Next">
+        <a
+          class="page-link"
+          href="#"
+          :class="disabledClass(nextDisabled)"
+          @click="changePage(currentPage + 1)"
+          aria-label="Next"
+        >
           <span aria-hidden="true">&raquo;</span>
         </a>
       </li>
@@ -24,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = withDefaults(defineProps<{
   currentPage: number,
@@ -46,7 +58,6 @@ const emit = defineEmits<{
 
 const changePage = (page: number) => {
   if (page !== props.currentPage) {
-    console.log("change page to", page);
     emit("page-change", page);
   }
 }
@@ -73,21 +84,17 @@ const disabledClass = (state: boolean) => {
   }
 };
 
-onMounted(() => {
-  console.log("props:", props);
-});
-
 const lastTab = computed(() => {
   return Math.min(props.lastPage, firstTab.value + props.numTabs);
 });
 
 const prevDisabled = computed(() => {
-  return firstTab.value <= 1;
+  return props.currentPage <= 1;
 });
 
 const nextDisabled = computed(() => {
-  console.log("disabled", lastTab.value, props.lastPage);
-  return lastTab.value >= props.lastPage;
+  // return lastTab.value >= props.lastPage;
+  return props.currentPage >= props.lastPage;
 });
 
 

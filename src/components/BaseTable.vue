@@ -29,7 +29,6 @@
 
 <script>
 import Paginator from "../components/Paginator.vue";
-import { onMounted } from "vue";
 
 export default {
   emits: ['page-change'],
@@ -56,13 +55,9 @@ export default {
   setup(props, ctx) {
 
     function pageChange(page) {
-      console.log("got event in BT", page);
       ctx.emit('page-change', page);
     }
 
-    onMounted(() => {
-      console.log("BT Props", props);
-    });
     return {
       pageChange
     };

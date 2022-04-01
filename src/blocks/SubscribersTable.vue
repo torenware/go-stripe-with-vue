@@ -96,7 +96,6 @@ function localDate(dateStr: string) {
 }
 
 const pageChange = (page: number) => {
-  console.log("got PC event", page);
   currentPage.value = page;
   updateSubs();
 }
