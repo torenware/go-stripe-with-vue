@@ -42,13 +42,13 @@ const props = withDefaults(defineProps<{
   currentPage: number,
   totalRows: number,
   lastPage: number,
-  numRows?: number,
+  pageSize?: number,
   numTabs?: number,
 }>(), {
   currentPage: 0,
   totalRows: 0,
   lastPage: 0,
-  numRows: 20,
+  pageSize: 20,
   numTabs: 5,
 });
 
@@ -66,12 +66,12 @@ const firstTab = ref(1);
 
 const updateFirstTab = () => {
   // FT is gte currentPage, LT <= FT + numTabs - 1
-  let window = Math.floor((props.currentPage - 1) / props.numRows)
-  let startWindow = window * props.numRows + 1;
-  let endWindow = window * props.numRows + props.numTabs;
+  let window = Math.floor((props.currentPage - 1) / props.pageSize)
+  let startWindow = window * props.pageSize + 1;
+  let endWindow = window * props.pageSize + props.numTabs;
   endWindow = Math.min(endWindow, props.lastPage);
   startWindow = endWindow - props.numTabs + 1;
-  firstTab.value = startWindow;
+  firstTab.value = Math.max(startWindow, 1);
 }
 
 onBeforeMount(() => {

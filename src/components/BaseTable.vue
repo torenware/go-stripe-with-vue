@@ -24,7 +24,7 @@
       :total-rows="totalRows"
       :last-page="lastPage"
       :num-tabs="numTabs"
-      :num-rows="numRows"
+      :page-size="pageSize"
     ></Paginator>
   </section>
 </template>
@@ -57,7 +57,7 @@ export default {
       required: false,
       default: 4,
     },
-    numRows: {
+    pageSize: {
       type: Number,
       required: false,
       default: 20,

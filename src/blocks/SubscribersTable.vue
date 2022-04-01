@@ -4,8 +4,8 @@
     :headers="headers"
     :current-page="currentPage"
     :last-page="lastPage"
-    :num-rows="3"
-    :num-tabs="3"
+    :page-size="pageSize"
+    :num-tabs="4"
     :total-rows="totalRows"
     @page-change="pageChange"
   >
@@ -41,6 +41,8 @@ import { format } from 'date-fns';
 import { Order, PaginatedRows } from '../types/accounts';
 import BaseTable from "../components/BaseTable.vue";
 import fetcher from "../utils/fetcher";
+
+const pageSize = 3;
 
 // {
 //   "id": 2,
@@ -104,7 +106,7 @@ const pageChange = (page: number) => {
 
 const updateSubs = async () => {
   try {
-    const data = await fetcher<PaginatedRows<Order>>("/api/auth/list-subs", currentPage.value);
+    const data = await fetcher<PaginatedRows<Order>>("/api/auth/list-subs", currentPage.value, pageSize);
     if (!data.error) {
       const { current_page, last_page, total_rows, rows } = data as PaginatedRows<Order>;
       subscriptions.value = rows;

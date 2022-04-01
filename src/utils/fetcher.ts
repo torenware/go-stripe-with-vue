@@ -1,10 +1,11 @@
 import { getTokenData } from '../logic/accounts';
 import { AuthReply } from '../types/accounts';
 
-// TBD make this a setting.
-const pageSize = 3;
-
-export default async function fetcher<T>(api: string, desiredPage = 1) {
+export default async function fetcher<T>(
+  api: string,
+  desiredPage = 1,
+  pageSize = 3
+) {
   let rows = [];
   const { token } = getTokenData() as AuthReply;
   const payload = {

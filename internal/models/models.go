@@ -362,7 +362,7 @@ func (m *DBModel) InsertUser(user User) (int, error) {
 	}
 
 	id, err := result.LastInsertId()
-    if err != nil {
+	if err != nil {
 		return 0, err
 	}
 
@@ -382,7 +382,7 @@ set
     updated_at = now()
 where id = ?
 `
-	_, err := m.DB.ExecContext(ctx, stmt,u.FirstName, u.LastName, u.Email, u.ID)
+	_, err := m.DB.ExecContext(ctx, stmt, u.FirstName, u.LastName, u.Email, u.ID)
 	if err != nil {
 		return err
 	}
@@ -402,7 +402,6 @@ func (m *DBModel) DeleteUser(id int) error {
 
 	return nil
 }
-
 
 func (m *DBModel) Authenticate(email, password string) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -446,14 +445,13 @@ func (m *DBModel) UpdatePasswordForUser(u User, hash string) error {
 	return nil
 }
 
-
 // GetPaginatedOrders gets a page of orders
 // @param pageSize 0 for all, otherwise
 // @returns
 //   list of *order
 //	 last page
 // 	 total rows
-func (m *DBModel) GetPaginatedOrders(isRecurring bool, pageSize, page int ) ([]*Order, int, int, error) {
+func (m *DBModel) GetPaginatedOrders(isRecurring bool, pageSize, page int) ([]*Order, int, int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -535,7 +533,7 @@ limit ? offset ?
 
 	// We need the total number of rows in the full set as well.
 	stmt = `
-	select count(*) from orders o 
+	select count(*) from orders o
 	left join widgets w on (w.id = o.widget_id)
 	where w.is_recurring = ?
 `
@@ -548,7 +546,7 @@ limit ? offset ?
 
 	lastPage := 0
 	if pageSize > 0 {
-		lastPage = rowCount / pageSize + 1
+		lastPage = (rowCount-1)/pageSize + 1
 	}
 
 	return rslt, lastPage, rowCount, nil
@@ -558,7 +556,7 @@ func (m *DBModel) GetPaginatedSales(pageSize, page int) ([]*Order, int, int, err
 	return m.GetPaginatedOrders(false, pageSize, page)
 }
 
-func (m *DBModel) GetPaginatedSubscriptions(pageSize, page int) ([]*Order, int, int,  error) {
+func (m *DBModel) GetPaginatedSubscriptions(pageSize, page int) ([]*Order, int, int, error) {
 	return m.GetPaginatedOrders(true, pageSize, page)
 }
 
@@ -696,7 +694,7 @@ order by
 //    @param int order_id
 //	  @param any return either recurring or not recurring.
 //    2param recurring 0 for not, 1 for recurring. Ignored if any is true.
-func (m *DBModel) GetOrder(id int, any bool,  recurring int) (*Order, error) {
+func (m *DBModel) GetOrder(id int, any bool, recurring int) (*Order, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -733,7 +731,7 @@ from orders o
 `
 		row = m.DB.QueryRowContext(ctx, stmt, recurring, id)
 	}
-	var o Order;
+	var o Order
 	err := row.Scan(
 		&o.Amount,
 		&o.Quantity,
@@ -764,9 +762,8 @@ from orders o
 }
 
 func (m *DBModel) GetSale(id int) (*Order, error) {
-  return m.GetOrder(id, false, 0)
+	return m.GetOrder(id, false, 0)
 }
-
 
 func (m *DBModel) GetSubscription(id int) (*Order, error) {
 	return m.GetOrder(id, false, 1)
