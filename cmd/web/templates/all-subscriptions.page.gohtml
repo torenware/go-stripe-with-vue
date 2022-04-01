@@ -20,7 +20,12 @@
 
 
 {{ define "content"}}
+    {{ $vue := .VueGlue }}
     <h2 class="ht-3">Subscription Summary</h2>
+
+    {{ if $vue }}
+      <div data-entryp="subs"></div>
+    {{ else }}
     <table class="table table-striped">
         <thead>
         <th>Order</th>
@@ -38,11 +43,16 @@
         <ul id="pagination" class="pagination">
         </ul>
     </nav>
+    {{ end }}
 
 {{ end }}
 
 {{ define "js"}}
+    {{ $vue := .VueGlue }}
+    {{ if not $vue }}
+
     <script>
+
         function LocalDate(dateStr) {
             const date = new Date(dateStr);
             return date.toLocaleDateString();
@@ -157,4 +167,5 @@
         }
         doIt();
     </script>
+    {{ end }}
 {{ end }}

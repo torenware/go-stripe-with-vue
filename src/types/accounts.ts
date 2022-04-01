@@ -51,4 +51,5 @@ export type Order = {
   transaction_id: number;
   transaction: Transaction;
   customer: Customer;
+  status_id: number;
 };

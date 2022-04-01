@@ -18,10 +18,13 @@
       <th>Last Four</th>
       <th>Customer</th>
       <th>Email</th>
+      <th>Status</th>
     </template>
     <template #body-rows>
       <tr v-for="order in subscriptions" :key="order.id">
-        <td>{{ order.id }}</td>
+        <td>
+          <a :href="`/admin/subscription/${order.id}`">{{ order.id }}</a>
+        </td>
         <td>{{ localDate(order.created_at) }}</td>
         <td>{{ order.widget.name }}</td>
         <td>{{ order.transaction_id }}</td>
@@ -29,6 +32,12 @@
         <td>{{ order.transaction.last_four }}</td>
         <td>{{ order.customer.last_name }}, {{ order.customer.first_name }}</td>
         <td>{{ order.customer.email }}</td>
+        <td>
+          <BaseBadge
+            :name="badge(order.status_id).name"
+            :badge-class="badge(order.status_id).class"
+          ></BaseBadge>
+        </td>
       </tr>
     </template>
   </BaseTable>
@@ -40,6 +49,7 @@ import { onMounted, ref, Ref } from "vue";
 import { format } from 'date-fns';
 import { Order, PaginatedRows } from '../types/accounts';
 import BaseTable from "../components/BaseTable.vue";
+import BaseBadge from "../components/BaseBadge.vue";
 import fetcher from "../utils/fetcher";
 
 const pageSize = 3;
@@ -90,6 +100,31 @@ const currentPage = ref(1);
 const lastPage = ref(0);
 const totalRows = ref(0);
 
+
+const badge = (orderStatus: number) => {
+  let badgeName: string;
+  let badgeClass: string;
+
+  switch (orderStatus) {
+    case 1:
+      badgeName = "Subscribed";
+      badgeClass = "bg-success";
+      break;
+    case 3:
+      badgeName = "Cancelled";
+      badgeClass = "bg-danger";
+      break;
+    default:
+      badgeName = "Subscribed";
+      badgeClass = "bg-success";
+      break;
+  }
+  return {
+    name: badgeName,
+    class: badgeClass
+  };
+};
+
 function formatCurrency(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -106,7 +141,8 @@ const pageChange = (page: number) => {
 
 const updateSubs = async () => {
   try {
-    const data = await fetcher<PaginatedRows<Order>>("/api/auth/list-subs", currentPage.value, pageSize);
+    const uri = `${window.tmpVars.api}/api/auth/list-subs`;
+    const data = await fetcher<PaginatedRows<Order>>(uri, currentPage.value, pageSize);
     if (!data.error) {
       const { current_page, last_page, total_rows, rows } = data as PaginatedRows<Order>;
       subscriptions.value = rows;

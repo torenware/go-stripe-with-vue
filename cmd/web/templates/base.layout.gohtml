@@ -94,14 +94,18 @@
           </li>
           {{ end }}
         </ul>
-        <ul class="navbar-nav mb-auto mb-2 mb-lg-0">
+        <ul class="navbar-nav mb-auto mb-2 mb-lg-0 d-flex align-items-center">
           {{ if .IsAuthenticated }}
-            <li class="mt-2 me-3">Welcome, {{ .User.FirstName }} {{ .User.LastName }}</li>
+            <li class="me-3">Welcome, {{ .User.FirstName }} {{ .User.LastName }}</li>
             <li><a  class="nav-link" href="/logout">Logout</a></li>
           {{ else }}
             <li><a  class="nav-link" href="/login">Login</a></li>
           {{end}}
-
+          {{ if $vue }}
+          <li><img src="/static/images/vue.svg" width="20" alt="enhanced with Vue 3" title="This page uses Vue 3 for progressive enhancement"></li>
+          {{ else }}
+            <li><img src="/static/images/gopher.svg" width="20" alt="rendered by Go" title="This page is fully rendered by the Go server"></li>
+          {{ end}}
         </ul>
       </div>
     </div>
@@ -133,7 +137,34 @@
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.1/dist/js.cookie.min.js" integrity="sha256-0H3Nuz3aug3afVbUlsu12Puxva3CP4EhJtPExqs54Vg=" crossorigin="anonymous"></script>
 {{ end }}
 <script>
+    function loginUserToSite(auth_obj) {
+      localStorage.setItem("token", auth_obj.token);
+      localStorage.setItem("expiry", auth_obj.expiry);
+    }
 
+    function getTokenData() {
+      const token = localStorage.getItem("token");
+      const expiry = localStorage.getItem("expiry");
+      if (token === null || expiry === null) {
+        return null;
+      }
+      return {
+        token, expiry
+      };
+    }
+
+    function isLoggedIn() {
+      return localStorage.getItem("token") !== null;
+    }
+
+    function logoutUser() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("expiry");
+      location.href = "/logout";
+    }
+
+
+   {{ if not $vue }}
     // window.addEventListener('load', (event) => {
     //   updateMenusOnLoad();
     // });
@@ -165,26 +196,6 @@
         Cookies.remove("flash");
       }
     });
-    function loginUserToSite(auth_obj) {
-      localStorage.setItem("token", auth_obj.token);
-      localStorage.setItem("expiry", auth_obj.expiry);
-    }
-
-    function getTokenData() {
-      const token = localStorage.getItem("token");
-      const expiry = localStorage.getItem("expiry");
-      if (token === null || expiry === null) {
-        return null;
-      }
-      return {
-        token, expiry
-      };
-    }
-
-    function isLoggedIn() {
-      return localStorage.getItem("token") !== null;
-    }
-
     async function checkAuth() {
       if (!isLoggedIn()) {
         location.href = "/login";
@@ -214,12 +225,6 @@
         }
 
       }
-    }
-
-    function logoutUser() {
-      localStorage.removeItem("token");
-      localStorage.removeItem("expiry");
-      location.href = "/logout";
     }
 
     function doCardFade(card, fadeAfter=10) {
@@ -260,6 +265,7 @@
       }
       return units.toLocaleString(locale, options);
     }
+    {{ end }}
 
   </script>
 

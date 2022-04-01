@@ -452,7 +452,13 @@ func (app *application) AllSales(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) AllSubscriptions(w http.ResponseWriter, r *http.Request) {
-	if err := app.renderTemplate(w, r, "all-subscriptions", nil); err != nil {
+	// This page has Vue support
+	td := &templateData{}
+	if app.vueglue != nil {
+		td.VueGlue = app.vueglue
+	}
+
+	if err := app.renderTemplate(w, r, "all-subscriptions", td); err != nil {
 		app.errorLog.Println(err)
 	}
 }
