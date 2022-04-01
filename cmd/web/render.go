@@ -3,11 +3,12 @@ package main
 import (
 	"embed"
 	"fmt"
-	"github.com/torenware/go-stripe/internal/models"
-	vueglue "github.com/torenware/vite-go"
 	"html/template"
 	"net/http"
 	"time"
+
+	"github.com/torenware/go-stripe/internal/models"
+	vueglue "github.com/torenware/vite-go"
 )
 
 type templateData struct {
@@ -44,7 +45,6 @@ func formatDate(date time.Time) string {
 	return formatted
 }
 
-
 // Embed the templates into the binary. This is a go 1.16 feature.
 // the "go:embed" command should be immediately after the double slashes,
 // w/o a space before it.
@@ -58,9 +58,9 @@ func (app *application) addDefaultData(td *templateData, r *http.Request) *templ
 	td.StringMap["STRIPE_SECRET"] = app.config.stripe.secret
 	td.API = app.config.api
 
-    if app.vueglue != nil {
-        td.VueGlue = app.vueglue
-    }
+	// if app.vueglue != nil {
+	//     td.VueGlue = app.vueglue
+	// }
 
 	if session.Exists(r.Context(), "userID") {
 		td.IsAuthenticated = 1

@@ -1,6 +1,8 @@
 import { createApp, App as BaseApp } from 'vue';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import '@popperjs/core';
+
 import App from './App.vue';
 import Login from './blocks/LoginBlock.vue';
 import FlashPanel from './components/FlashPanel.vue';

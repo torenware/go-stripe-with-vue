@@ -2,7 +2,7 @@ import { getTokenData } from '../logic/accounts';
 import { AuthReply } from '../types/accounts';
 
 // TBD make this a setting.
-const pageSize = 4;
+const pageSize = 3;
 
 export default async function fetcher<T>(api: string, desiredPage = 1) {
   let rows = [];
@@ -24,9 +24,11 @@ export default async function fetcher<T>(api: string, desiredPage = 1) {
   try {
     const rslt = await fetch(api, requestOptions);
     const data = await rslt.json();
-    return data.rows as T[];
+    return data as T;
   } catch (err) {
     console.log(err);
-    return [] as T[];
+    return {
+      error: err,
+    };
   }
 }

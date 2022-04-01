@@ -1,5 +1,12 @@
 <template>
-  <BaseTable :data="subscriptions" :headers="headers">
+  <BaseTable
+    :data="subscriptions"
+    :headers="headers"
+    :current-page="currentPage"
+    :last-page="lastPage"
+    :total-rows="totalRows"
+    @page-change="pageChange"
+  >
     <template #header-row>
       <th>Order</th>
       <th>Date</th>
@@ -29,37 +36,9 @@
 <script setup lang="ts">
 import { onMounted, ref, Ref } from "vue";
 import { format } from 'date-fns';
+import { Order, PaginatedRows } from '../types/accounts';
 import BaseTable from "../components/BaseTable.vue";
 import fetcher from "../utils/fetcher";
-
-type Widget = {
-  id: number;
-  name: string;
-  price: number;
-}
-
-type Transaction = {
-  id: number;
-  currency: string;
-  last_four: string;
-}
-
-type Customer = {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
-
-type Order = {
-  id: number;
-  amount: number;
-  created_at: string;
-  widget: Widget;
-  transaction_id: number;
-  transaction: Transaction;
-  customer: Customer;
-}
 
 // {
 //   "id": 2,
@@ -103,6 +82,10 @@ type Order = {
 const subscriptions: Ref<Order[]> = ref([]);
 let headers: Ref<string[]> = ref([]);
 
+const currentPage = ref(1);
+const lastPage = ref(0);
+const totalRows = ref(0);
+
 function formatCurrency(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
@@ -112,16 +95,31 @@ function localDate(dateStr: string) {
   return format(date, "yyyy-MM-dd");
 }
 
-onMounted(async () => {
+const pageChange = (page: number) => {
+  console.log("got PC event", page);
+  currentPage.value = page;
+  updateSubs();
+}
+
+const updateSubs = async () => {
   try {
-    const data = await fetcher<Order>("/api/auth/list-subs");
-    subscriptions.value = data;
-    console.log(subscriptions);
-    headers.value = ["ID", "LAST", "EMAIL"];
+    const data = await fetcher<PaginatedRows<Order>>("/api/auth/list-subs", currentPage.value);
+    if (!data.error) {
+      const { current_page, last_page, total_rows, rows } = data as PaginatedRows<Order>;
+      subscriptions.value = rows;
+      currentPage.value = current_page;
+      lastPage.value = last_page;
+      totalRows.value = total_rows;
+    }
 
   } catch (err) {
     console.log(err);
   }
+
+}
+
+onMounted(() => {
+  updateSubs();
 });
 
 </script>

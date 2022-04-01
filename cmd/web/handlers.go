@@ -26,7 +26,12 @@ func (app *application) setFlashAndGoHome(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) HomePage(w http.ResponseWriter, r *http.Request) {
-	if err := app.renderTemplate(w, r, "home", nil); err != nil {
+	// This page has Vue support
+	td := &templateData{}
+	if app.vueglue != nil {
+		td.VueGlue = app.vueglue
+	}
+	if err := app.renderTemplate(w, r, "home", td); err != nil {
 		app.errorLog.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 	}
@@ -348,7 +353,12 @@ func (app *application) LoginPage(w http.ResponseWriter, r *http.Request) {
 	// Make sure we are not logged in while displaying this
 	_ = session.Destroy(r.Context())
 	_ = session.RenewToken(r.Context())
-	if err := app.renderTemplate(w, r, "login", nil); err != nil {
+	// Since we've converted this form to Vue code:
+	td := &templateData{}
+	if app.vueglue != nil {
+		td.VueGlue = app.vueglue
+	}
+	if err := app.renderTemplate(w, r, "login", td); err != nil {
 		app.errorLog.Println(err)
 	}
 }
@@ -449,11 +459,11 @@ func (app *application) AllSubscriptions(w http.ResponseWriter, r *http.Request)
 
 func (app *application) GetSale(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idParam)
+	id, _ := strconv.Atoi(idParam)
 	order, err := app.DB.GetSale(id)
 	if err != nil {
 		app.errorLog.Println(err)
-		http.Redirect(w, r, "/",  http.StatusNotFound)
+		http.Redirect(w, r, "/", http.StatusNotFound)
 		return
 	}
 	data := make(map[string]interface{})
@@ -468,11 +478,11 @@ func (app *application) GetSale(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) GetSubscription(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
-	id, err := strconv.Atoi(idParam)
+	id, _ := strconv.Atoi(idParam)
 	order, err := app.DB.GetSubscription(id)
 	if err != nil {
 		app.errorLog.Println(err)
-		http.Redirect(w, r, "/",  http.StatusNotFound)
+		http.Redirect(w, r, "/", http.StatusNotFound)
 		return
 	}
 	data := make(map[string]interface{})
@@ -505,7 +515,7 @@ func (app *application) ShowUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) EditUser(w http.ResponseWriter, r *http.Request) {
-	uid, err := strconv.Atoi(chi.URLParam(r, "id"))
+	uid, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	user, err := app.DB.GetUserByID(uid)
 	data := make(map[string]interface{})
 	data["user"] = user
@@ -517,13 +527,8 @@ func (app *application) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func (app *application) NewUserForm(w http.ResponseWriter, r *http.Request) {
 	if err := app.renderTemplate(w, r, "new-user", nil); err != nil {
 		app.errorLog.Println(err)
 	}
 }
-
-
-
-
