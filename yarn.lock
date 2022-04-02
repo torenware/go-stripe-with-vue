@@ -44,6 +44,11 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.4.tgz#d8c7b8db9226d2d7664553a0741ad7d0397ee503"
   integrity sha512-q/ytXxO5NKvyT37pmisQAItCFqA7FD/vNb8dgaJy3/630Fsc+Mz9/9f2SziBoIZ30TJooXyTwZmhi1zjXmObYg==
 
+"@stripe/stripe-js@^1.26.0":
+  version "1.26.0"
+  resolved "https://registry.yarnpkg.com/@stripe/stripe-js/-/stripe-js-1.26.0.tgz#45670924753c01e18d0544ea1f1067b474aaa96f"
+  integrity sha512-4R1vC75yKaCVFARW3bhelf9+dKt4NP4iZY/sIjGK7AAMBVvZ47eG74NvsAIUdUnhOXSWFMjdFWqv+etk5BDW4g==
+
 "@types/js-cookie@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@types/js-cookie/-/js-cookie-3.0.1.tgz#04aa743e2e0a85a22ee9aa61f6591a8bc19b5d68"
@@ -926,6 +931,11 @@ vscode-vue-languageservice@0.29.8:
     vscode-pug-languageservice "0.29.8"
     vscode-typescript-languageservice "0.29.8"
 
+vue-demi@^0.6.0:
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/vue-demi/-/vue-demi-0.6.2.tgz#ed9633eaa69b7409cc6e8328e8a6c3d31ab39319"
+  integrity sha512-4KfwxbqsZcDz7UryD11oHa6FLK9Gzx4MIwAEcP37IbUdXuF6DHg2w9L5Zv5t+FNqsuAjEQ2NnGVIZ3u71y435Q==
+
 vue-tsc@^0.29.8:
   version "0.29.8"
   resolved "https://registry.yarnpkg.com/vue-tsc/-/vue-tsc-0.29.8.tgz#f4d8de5dd8756107c878489ccf9178d2d72fff47"
@@ -933,6 +943,13 @@ vue-tsc@^0.29.8:
   dependencies:
     "@volar/shared" "0.29.8"
     vscode-vue-languageservice "0.29.8"
+
+vue-use-stripe@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/vue-use-stripe/-/vue-use-stripe-0.1.1.tgz#0d03bca607839636007676e4ed4da690b1794739"
+  integrity sha512-Gz5+7be9glQttWHJwsWzqFnkMmpWIAkklg+svflKKVEAUW9VFW+TFDoTaO2xhM23DAYyUBWEZEyRe+Juxq5QvA==
+  dependencies:
+    vue-demi "^0.6.0"
 
 vue@^3.2.25:
   version "3.2.31"

@@ -50,7 +50,7 @@ import { format } from 'date-fns';
 import { Order, PaginatedRows } from '../types/accounts';
 import BaseTable from "../components/BaseTable.vue";
 import BaseBadge from "../components/BaseBadge.vue";
-import fetcher from "../utils/fetcher";
+import fetcher, { NewFetchParams } from "../utils/fetcher";
 
 const pageSize = 3;
 
@@ -142,7 +142,10 @@ const pageChange = (page: number) => {
 const updateSubs = async () => {
   try {
     const uri = `${window.tmpVars.api}/api/auth/list-subs`;
-    const data = await fetcher<PaginatedRows<Order>>(uri, currentPage.value, pageSize);
+    const params = NewFetchParams();
+    params.page = currentPage.value;
+    params.pageSize = pageSize;
+    const data = await fetcher<PaginatedRows<Order>>(uri, params);
     if (!data.error) {
       const { current_page, last_page, total_rows, rows } = data as PaginatedRows<Order>;
       subscriptions.value = rows;

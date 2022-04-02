@@ -128,7 +128,6 @@ label.checkbox {
   margin-left: 0.3rem;
 }
 label:not(.checkbox) {
-  font-weight: bold;
   margin-left: 0.3rem;
 }
 

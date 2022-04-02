@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/sethvargo/go-password/password"
-	"github.com/stripe/stripe-go/v72"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/sethvargo/go-password/password"
+	"github.com/stripe/stripe-go/v72"
 
 	"github.com/torenware/go-stripe/internal/cards"
 	"github.com/torenware/go-stripe/internal/models"
@@ -43,6 +44,16 @@ type jsonResponse struct {
 	Message string `json:"message,omitempty"`
 	Content string `json:"content,omitempty"`
 	ID      int    `json:"id,omitempty"`
+}
+
+func (app *application) StripeParams(w http.ResponseWriter, r *http.Request) {
+	var output struct {
+		Error bool   `json:"error"`
+		Key   string `json:"key"`
+	}
+	output.Error = false
+	output.Key = app.config.stripe.key
+	app.writeJSON(w, http.StatusOK, output)
 }
 
 func (app *application) GetPaymentIntent(w http.ResponseWriter, r *http.Request) {
@@ -255,7 +266,7 @@ func (app *application) sendPasswordEmail(user models.User) error {
 	app.infoLog.Println(signedToken)
 
 	app.infoLog.Println("Email would be sent here")
-	return  app.SendMail("info@widgets.com", user.Email, "Password Reset Request", "password-reset", data)
+	return app.SendMail("info@widgets.com", user.Email, "Password Reset Request", "password-reset", data)
 }
 
 func (app *application) PasswordLink(w http.ResponseWriter, r *http.Request) {
@@ -329,7 +340,6 @@ func (app *application) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		_ = app.badRequest(w, r, err)
 		return
 	}
-
 
 	err = app.DB.UpdatePasswordForUser(user, string(newHash))
 	if err != nil {
@@ -465,7 +475,7 @@ func (app *application) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 
 	// No password? generate a random one
 	if userInput.Password == "" {
-		pw, err := password.Generate(20, 3,2,false, true)
+		pw, err := password.Generate(20, 3, 2, false, true)
 		if err != nil {
 			_ = app.badRequest(w, r, err)
 			return
@@ -494,7 +504,7 @@ func (app *application) CreateNewUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var out struct {
-		Error   bool `json:"error"`
+		Error   bool   `json:"error"`
 		Message string `json:"message"`
 		UserID  int    `json:"user_id"`
 	}
@@ -824,7 +834,6 @@ func (app *application) CancelSubscription(w http.ResponseWriter, r *http.Reques
 	_ = app.writeJSON(w, http.StatusOK, out)
 }
 
-
 func (app *application) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	uidStr := chi.URLParam(r, "id")
 	uid, err := strconv.Atoi(uidStr)
@@ -908,7 +917,6 @@ func (app *application) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	_ = app.writeJSON(w, status, out)
 }
 
-
 func (app *application) SingleUser(w http.ResponseWriter, r *http.Request) {
 	uidStr := chi.URLParam(r, "id")
 	uid, err := strconv.Atoi(uidStr)
@@ -934,4 +942,3 @@ func (app *application) SingleUser(w http.ResponseWriter, r *http.Request) {
 	out.User = user
 	_ = app.writeJSON(w, http.StatusOK, out)
 }
-
