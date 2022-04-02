@@ -20,7 +20,7 @@ func ServeVueAssets(mux *chi.Mux, fileSys fs.ReadFileFS, pathToAssets string) er
 func (app *application) routes() http.Handler {
 	mux := chi.NewMux()
 	mux.Use(SessionLoad)
-	mux.Use(app.logRequest)
+	mux.Use(app.RequestLoggerMiddleware)
 
 	mux.Get("/", app.HomePage)
 	mux.Post("/payment-succeeded", app.PaymentSucceeded)

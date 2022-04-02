@@ -90,7 +90,6 @@ func main() {
 		return
 	}
 	config.db.dsn = dsn
-	infoLog.Println("dsn", dsn)
 
 	conn, err := driver.OpenDB(config.db.dsn)
 	if err != nil {

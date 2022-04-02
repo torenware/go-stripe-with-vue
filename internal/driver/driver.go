@@ -38,10 +38,6 @@ func ConstructDSN() (string, error) {
 		return "", errors.New("DB_PW required")
 	}
 
-	if host != "127.0.0.1" {
-
-	}
-
 	config := mysql.NewConfig()
 	config.User = acct
 	config.Passwd = pw
@@ -49,10 +45,8 @@ func ConstructDSN() (string, error) {
 	config.Addr = host
 	config.DBName = name
 
-	// dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", acct, pw, host, name)
 	dsn := config.FormatDSN()
 	dsn = dsn + "?parseTime=true&tls=false"
-	os.Stderr.WriteString(dsn)
 	return dsn, nil
 }
 
