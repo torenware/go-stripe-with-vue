@@ -58,7 +58,8 @@ const props = withDefaults(defineProps<{
   name?: string,
   value?: string,
 }>(), {
-  inputType: "text"
+  inputType: "text",
+  required: ""
 });
 
 const validateItem = () => {
