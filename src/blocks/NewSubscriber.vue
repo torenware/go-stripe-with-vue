@@ -17,13 +17,13 @@
 
 <script setup lang="ts">
 import { ref, Ref, onMounted } from "vue";
-import { PaymentMethodResult, Stripe as StripeType, StripeCardElement } from "@stripe/stripe-js/types"
+import { PaymentMethodResult, Stripe as StripeType, StripeCardElement } from "@stripe/stripe-js/types";
+import { loadStripe } from "@stripe/stripe-js";
 import fetcher, { NewFetchParams } from "../utils/fetcher";
 import { sendFlash } from "../utils/flash";
 import { ProcessSubmitFunc, JSPO } from "../types/forms";
 import BaseForm from "../components/BaseForm.vue";
 import BaseInput from "../components/BaseInput.vue";
-import { sub, subQuarters } from "date-fns";
 
 type Widget = {
   id: number,
@@ -176,18 +176,23 @@ onMounted(async () => {
     console.log("cannot load stripe:", rslt.error);
     return;
   }
-  console.log("no error", rslt);
   sparams.value = rslt as StripeParams;
 
   if (window.Stripe) {
-    console.log('Stripe is in global space')
+    console.log('Stripe is in global space');
+    stripe.value = window.Stripe(sparams.value.key);
+
   } else {
-    console.log("huh? no stripe?");
+    try {
+      stripe.value = await loadStripe(sparams.value.key);
+      console.log("late load for Stripe");
+    } catch (err) {
+      console.log("huh? no stripe?", err);
+    }
   }
 
   // Stripe is included via an injected script tag by stripe-js.js.
   // @ts-ignore
-  stripe.value = Stripe(sparams.value.key);
   initStripeField(stripe)
 
 });
