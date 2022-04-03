@@ -1,36 +1,44 @@
 import { getTokenData } from '../logic/accounts';
 import { AuthReply } from '../types/accounts';
+import { JSPO } from '../types/forms';
+
+type PagerData = {
+  current_page: number;
+  page_size: number;
+};
+
+type Payload = PagerData | JSPO;
 
 export type FetchParams = {
   method: string;
-  page: number;
-  pageSize: number;
+  payload?: Payload | null;
 };
 
-export function NewFetchParams() {
+export function NewFetchParams(payload = true) {
   // Put in defaults
-  return {
+  let defaultPayload: Payload;
+
+  const params = {
     method: 'post',
-    page: 1,
-    pageSize: 3,
   } as FetchParams;
+
+  if (payload) {
+    params.payload = {
+      current_page: 1,
+      page_size: 3,
+    };
+  }
+  return params;
 }
 
-export default async function fetcher<T>(
-  api: string,
-  params?: FetchParams
-  // desiredPage = 1,
-  // pageSize = 3
-) {
+export default async function fetcher<T>(api: string, params?: FetchParams) {
   if (!params) {
     params = NewFetchParams();
   }
   const { token } = getTokenData() as AuthReply;
 
-  const payload = {
-    page_size: params.pageSize,
-    current_page: params.page,
-  };
+  // default assumes a paginated list
+  let payload = params.payload;
 
   const requestOptions: RequestInit = {
     method: params.method,
@@ -41,8 +49,12 @@ export default async function fetcher<T>(
     },
   };
 
-  if (params.method.toLowerCase() in ['post', 'put']) {
-    requestOptions.body = JSON.stringify(payload);
+  if (['post', 'put'].includes(params.method.toLowerCase())) {
+    try {
+      requestOptions.body = JSON.stringify(payload);
+    } catch (err) {
+      console.log('could not stringify');
+    }
   }
 
   try {

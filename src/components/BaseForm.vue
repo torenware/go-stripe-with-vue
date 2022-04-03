@@ -43,6 +43,10 @@ const props = withDefaults(defineProps<{
   submitText: "Submit",
 });
 
+const emit = defineEmits<{
+  (e: "reset"): void
+}>();
+
 type FormControl = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
 
 // TODO factor into mixin.
@@ -60,7 +64,6 @@ const sendFlash = (msg: string, alertType: string = "alert-danger") => {
   } else {
     console.log("cannot find the #flashPanel");
   }
-
 }
 
 const validateRadioGroups = (form: HTMLFormElement) => {
@@ -187,11 +190,23 @@ const setupResetBtn = (reset: HTMLButtonElement | null) => {
   if (!reset || !reset.form) {
     return;
   }
+
+  reset.addEventListener("mouseover", () => {
+    // grab focus to prevent conflict other blur
+    // hungry elements.
+    reset.focus();
+  });
+
+  reset.addEventListener("mouseleave", () => {
+    reset.blur();
+  });
+
   reset.addEventListener("click", () => {
     reset.form?.reset();
     errorClasses.value.clear();
 
     // make the button unselect itself
+    emit("reset");
     reset.blur();
 
     const elems = reset.form?.querySelectorAll("input, select, textarea");

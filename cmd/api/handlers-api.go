@@ -34,7 +34,7 @@ type stripePayload struct {
 	ExpiryMonth   int    `json:"exp_month"`
 	ExpiryYear    int    `json:"exp_year"`
 	LastFour      string `json:"last_four"`
-	ProductID     string `json:"product_id"`
+	ProductID     int    `json:"product_id"`
 	FirstName     string `json:"first_name"`
 	LastName      string `json:"last_name"`
 }
@@ -47,12 +47,27 @@ type jsonResponse struct {
 }
 
 func (app *application) StripeParams(w http.ResponseWriter, r *http.Request) {
+	wid := chi.URLParam(r, "widgetID")
+	widgetID, _ := strconv.Atoi(wid)
+
+	// 0 is allowed; we will reserve that for the terminal.
 	var output struct {
-		Error bool   `json:"error"`
-		Key   string `json:"key"`
+		Error  bool           `json:"error"`
+		Key    string         `json:"key"`
+		Widget *models.Widget `json:"widget"`
+	}
+
+	if widgetID > 0 {
+		widget, err := app.DB.GetWidget(widgetID)
+		if err != nil {
+			app.badRequest(w, r, err)
+			return
+		}
+		output.Widget = &widget
 	}
 	output.Error = false
 	output.Key = app.config.stripe.key
+
 	app.writeJSON(w, http.StatusOK, output)
 }
 
@@ -113,8 +128,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 
 	err := json.NewDecoder(r.Body).Decode(&payload)
 	if err != nil {
-		app.errorLog.Println(err)
-		return
+		_ = app.badRequest(w, r, err)
 	}
 
 	debug, _ := json.MarshalIndent(payload, "", "    ")
@@ -127,6 +141,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 	}
 
 	ok := true
+	retCode := http.StatusOK // optimism
 	var subscription *stripe.Subscription
 	txnMsg := "Transaction is successful"
 
@@ -135,6 +150,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 		app.errorLog.Println(msg, err)
 		ok = false
 		txnMsg = msg
+		retCode = http.StatusBadRequest
 	}
 	if ok {
 		subscription, err = card.SubscribeCustomer(cust, payload.PlanID, payload.Email, payload.LastFour, "")
@@ -142,6 +158,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 			app.errorLog.Println(msg, err)
 			ok = false
 			txnMsg = "Subscription failed"
+			retCode = http.StatusBadRequest
 		}
 	}
 
@@ -153,7 +170,8 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 		custID, err := app.SaveCustomer(sp.FirstName, sp.LastName, sp.Email)
 		if err != nil {
 			app.errorLog.Println(err)
-			return
+			txnMsg = "We could not process your request"
+			_ = app.badRequest(w, r, errors.New(txnMsg))
 		}
 		txn := models.Transaction{
 			Amount:              sp.Amount,
@@ -170,15 +188,16 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 		txnID, err := app.SaveTxn(txn)
 		if err != nil {
 			app.errorLog.Println(err)
-			return
+			txnMsg = "We could not process your request"
+			_ = app.badRequest(w, r, errors.New(txnMsg))
 		}
-		pID, err := strconv.Atoi(sp.ProductID)
 		if err != nil {
 			app.errorLog.Println(err)
-			return
+			txnMsg = "We could not process your request"
+			_ = app.badRequest(w, r, errors.New(txnMsg))
 		}
 		order := models.Order{
-			WidgetID:      pID,
+			WidgetID:      payload.ProductID,
 			TransactionID: txnID,
 			CustomerID:    custID,
 			StatusID:      1,
@@ -190,7 +209,8 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 		_, err = app.SaveOrder(order)
 		if err != nil {
 			app.errorLog.Println(err)
-			return
+			txnMsg = "We could not process your request"
+			_ = app.badRequest(w, r, errors.New(txnMsg))
 		}
 	}
 
@@ -206,6 +226,7 @@ func (app *application) ProcessSubscription(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(retCode)
 	_, _ = w.Write(out)
 
 }

@@ -7,7 +7,6 @@
   {{ $recurring = $widget.IsRecurring }}
 {{ end }}
 
-<script src="https://js.stripe.com/v3/"></script>
 
 <script>
   const stripe_key = "{{ index .StringMap "STRIPE_KEY" }}";
@@ -150,8 +149,9 @@
             showCardError(rslt.error.message);
           } else {
             // create customer and subscribe.
+            const pidStr = document.getElementById("product_id").value;
             let payload = {
-              product_id:  document.getElementById("product_id").value,
+              product_id:  parseInt(pidStr, 10),
               plan: '{{$widget.PlanID}}',
               payment_method: rslt.paymentMethod.id,
               email: document.getElementById("email").value,

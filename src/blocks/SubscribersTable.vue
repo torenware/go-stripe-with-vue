@@ -143,8 +143,12 @@ const updateSubs = async () => {
   try {
     const uri = `${window.tmpVars.api}/api/auth/list-subs`;
     const params = NewFetchParams();
-    params.page = currentPage.value;
-    params.pageSize = pageSize;
+    params.method = "post";
+    params.payload = {
+      current_page: currentPage.value,
+      page_size: pageSize,
+    }
+
     const data = await fetcher<PaginatedRows<Order>>(uri, params);
     if (!data.error) {
       const { current_page, last_page, total_rows, rows } = data as PaginatedRows<Order>;

@@ -335,6 +335,7 @@ func (app *application) BronzePlan(w http.ResponseWriter, r *http.Request) {
 	data["widget"] = widget
 	tdata := templateData{
 		Data: data,
+		VueGlue: app.vueglue,
 	}
 
 	if err := app.renderTemplate(w, r, "bronze", &tdata, "stripe-form", "stripejs"); err != nil {

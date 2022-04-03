@@ -1,5 +1,5 @@
 <template>
-  <BaseForm>
+  <BaseForm reset-text="Reset" :process="processCard" @reset="handleReset">
     <BaseInput id="first_name" label="First Name" required="true" />
     <BaseInput id="last_name" label="Last Name" required="true" />
     <BaseInput id="card_holder" label="Name on Card" required="true" />
@@ -17,19 +17,103 @@
 
 <script setup lang="ts">
 import { ref, Ref, onMounted } from "vue";
-import { Stripe as StripeType } from "@stripe/stripe-js/types"
+import { PaymentMethodResult, Stripe as StripeType, StripeCardElement } from "@stripe/stripe-js/types"
 import fetcher, { NewFetchParams } from "../utils/fetcher";
+import { sendFlash } from "../utils/flash";
+import { ProcessSubmitFunc, JSPO } from "../types/forms";
 import BaseForm from "../components/BaseForm.vue";
 import BaseInput from "../components/BaseInput.vue";
+import { sub, subQuarters } from "date-fns";
 
+type Widget = {
+  id: number,
+  name: string,
+  price: number,
+  plan_id: string,
+  is_recurring: boolean,
+  description: string,
+}
 
 type StripeParams = {
   error: boolean,
-  key: string
+  key: string,
+  widget: Widget,
 }
 
 const sparams: Ref<StripeParams | null> = ref(null);
 const stripe: Ref<StripeType | null> = ref(null);
+const cardField: Ref<StripeCardElement | null> = ref(null);
+
+const processCard: ProcessSubmitFunc = async (data, form) => {
+  try {
+    const intent = await stripe.value?.createPaymentMethod({
+      type: "card",
+      card: cardField.value!,
+      billing_details: {
+        email: data["email"] as string
+      }
+    });
+    await stripePaymentMethodHandler(intent!, data)
+  } catch (err) {
+    sendFlash("Sorry. Could not create your subscription");
+    console.log("failed:", err);
+  }
+}
+
+async function stripePaymentMethodHandler(rslt: PaymentMethodResult, data: JSPO) {
+  type SubscriptionReply = {
+    ok: boolean,
+    message: string,
+  }
+
+  if (rslt.error) {
+    // showCardError(rslt.error.message);
+  } else {
+    const params = sparams.value! as StripeParams;
+    // create customer and subscribe.
+    let payload = {
+      product_id: params.widget.id,
+      plan: params.widget.plan_id,
+      payment_method: rslt.paymentMethod.id,
+      email: data.email,
+      last_four: rslt.paymentMethod.card?.last4 as string,
+      card_brand: rslt.paymentMethod.card?.brand as string,
+      exp_month: rslt.paymentMethod.card?.exp_month as number,
+      exp_year: rslt.paymentMethod.card?.exp_year as number,
+      first_name: data.first_name as string,
+      last_name: data.last_name as string,
+      amount: params.widget.price as number,
+      currency: "cad", // Put into widget table
+    };
+
+    const uri = `${window.tmpVars.api}/api/create-customer-and-subscribe-to-plan`;
+    const fetchParams = NewFetchParams();
+    fetchParams.payload = payload
+    const subRslt = await fetcher<SubscriptionReply>(uri, fetchParams)
+    // todo: either use an error or an ok but not both on
+    // the server.
+    if (!(subRslt as SubscriptionReply).ok) {
+      let msg = (subRslt as SubscriptionReply).message;
+      if (!msg) {
+        msg = (subRslt as { error: unknown }).error as string
+      }
+      throw new Error(msg);
+    }
+
+    // Stuff our data into session_storage
+    sessionStorage.setItem("first_name", payload.first_name)
+    sessionStorage.setItem("last_name", payload.last_name)
+    sessionStorage.setItem("amount", (payload.amount / 100).toFixed(2))
+    sessionStorage.setItem("last_four", payload.last_four)
+    sessionStorage.setItem("card_brand", payload.card_brand)
+    sessionStorage.setItem("item", params.widget.name)
+    sessionStorage.setItem("description", params.widget.description)
+
+    location.href = "/receipt/bronze";
+
+  }
+}
+
 
 const initStripeField = (stripeRef: Ref<StripeType | null>) => {
   const stripe = stripeRef.value!;
@@ -47,6 +131,7 @@ const initStripeField = (stripeRef: Ref<StripeType | null>) => {
     hidePostalCode: false,
   });
   card.mount("#card-element");
+  cardField.value = card;
 
   // Stripe doesn't expose a type for this.
   type StripeError = {
@@ -75,13 +160,18 @@ const initStripeField = (stripeRef: Ref<StripeType | null>) => {
       displayError.textContent = '';
     }
   });
+}
 
+const handleReset = () => {
+  if (cardField.value) {
+    cardField.value.clear();
+  }
 }
 
 onMounted(async () => {
   const params = NewFetchParams();
   params.method = "get";
-  const rslt = await fetcher<StripeParams>(`${window.tmpVars.api}/api/sparams`, params);
+  const rslt = await fetcher<StripeParams>(`${window.tmpVars.api}/api/sparams/2`, params);
   if (rslt.error) {
     console.log("cannot load stripe:", rslt.error);
     return;

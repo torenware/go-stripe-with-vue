@@ -112,6 +112,12 @@
             }
             try {
                 const rslt = await fetch("{{ .API }}/api/auth/list-subs", requestOptions);
+
+                // if we've expired, redirect
+                if (rslt.status === 401) {
+                    logoutUser();
+                }
+
                 const data = await rslt.json();
                 const {rows: orders, last_page: lastPage, total_rows: totalRows, current_page: currentPage} = data;
                 rows = orders;

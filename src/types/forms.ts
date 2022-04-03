@@ -5,7 +5,7 @@ export enum FieldSetState {
 }
 
 export type JSPO = {
-  [key: string]: string | number;
+  [key: string]: string | number | undefined;
 };
 
 export type ProcessSubmitFunc = (

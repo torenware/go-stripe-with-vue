@@ -5,14 +5,21 @@
 {{end}}
 
 {{define "content"}}
+{{ $vue := .VueGlue }}
+
 <h2>Subscribe to the Widgets Bronze Plan</h2>
 <hr>
-
-  {{ template "stripe-form" . }}
-
+  {{ if $vue }}
+    <div data-entryp="new-sub"></div>
+  {{ else }}
+    {{ template "stripe-form" . }}
+  {{ end }}
 {{ end }}
 
 {{ define "js" }}
-  {{template "stripejs" .}}
+    {{ $vue := .VueGlue }}
+    {{ if not $vue }}
+      {{template "stripejs" .}}
+    {{ end }}
 {{ end }}
 

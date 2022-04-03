@@ -19,9 +19,11 @@
       const tmpVars = {};
       tmpVars.api = "{{.API}}";
       tmpVars.uid = {{ .UserID }};
-      console.log("passed down", tmpVars);
       window.tmpVars = tmpVars;
     </script>
+
+    <script src="https://js.stripe.com/v3/"></script>
+
 
     {{ $vue := .VueGlue }}
     {{ if $vue }}
@@ -165,28 +167,6 @@
 
 
    {{ if not $vue }}
-    // window.addEventListener('load', (event) => {
-    //   updateMenusOnLoad();
-    // });
-    //
-    // function updateMenusOnLoad() {
-    //   const loginItem = document.getElementById("login-logout");
-    //   const vTerm = document.getElementById("vt-term")
-    //   const data = getTokenData();
-    //   if (data === null) {
-    //     loginItem.href = "/login";
-    //     loginItem.innerText = "Login";
-    //     if (!vTerm.classList.contains("d-none")) {
-    //       vTerm.classList.add("d-none");
-    //     }
-    //   } else {
-    //     loginItem.href = "javascript:logoutUser()";
-    //     loginItem.innerText = "Logout";
-    //     if (vTerm.classList.contains("d-none")) {
-    //       vTerm.classList.remove("d-none");
-    //     }
-    //   }
-    // }
 
     document.addEventListener("DOMContentLoaded", evt => {
       const flashVal = Cookies.get("flash");

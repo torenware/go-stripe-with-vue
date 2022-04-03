@@ -20,7 +20,7 @@ func (app *application) routes() http.Handler {
 	}))
 
 	mux.Post("/api/payment-intent", app.GetPaymentIntent)
-	mux.Get("/api/sparams", app.StripeParams)
+	mux.Get("/api/sparams/{widgetID}", app.StripeParams)
 	mux.Post("/api/create-customer-and-subscribe-to-plan", app.ProcessSubscription)
 
 	// Auth
