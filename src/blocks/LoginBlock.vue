@@ -21,7 +21,6 @@ import { handleLogin } from "../logic/accounts";
 
 
 const processLogin: ProcessSubmitFunc = (data: JSPO, form: HTMLFormElement | null) => {
-  console.log("submitting data", data);
   if (!form) {
     console.log("form isn't ready");
     return;

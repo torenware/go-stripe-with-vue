@@ -11,14 +11,24 @@
       tmpVars.uid = 1;
       console.log("passed down", tmpVars);
       window.tmpVars = tmpVars;
+
+      if (["/logout", "/process-login"].includes(location.pathname)) {
+        location.href = "/";
+      }
     </script>
   </head>
   <body>
     <div class="container">
         <div data-entryp="flash"></div>
-        <div data-entryp="subs"></div>
-        <div data-entryp="login"></div>
+
+      <div data-entryp="login"></div>
+
+
+      <div data-entryp="subs"></div>
+
+        <!--
         <div data-entryp="new-sub">Loading...</div>
+        -->
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

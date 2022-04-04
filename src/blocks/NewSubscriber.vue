@@ -19,7 +19,7 @@
 import { ref, Ref, onMounted } from "vue";
 import { PaymentMethodResult, Stripe as StripeType, StripeCardElement } from "@stripe/stripe-js/types";
 import { loadStripe } from "@stripe/stripe-js";
-import fetcher, { NewFetchParams } from "../utils/fetcher";
+import fetcher, { NewFetchParams, FetchError } from "../utils/fetcher";
 import { sendFlash } from "../utils/flash";
 import { ProcessSubmitFunc, JSPO } from "../types/forms";
 import BaseForm from "../components/BaseForm.vue";
@@ -45,8 +45,9 @@ const stripe: Ref<StripeType | null> = ref(null);
 const cardField: Ref<StripeCardElement | null> = ref(null);
 
 const processCard: ProcessSubmitFunc = async (data, form) => {
+  let intent: PaymentMethodResult | undefined;
   try {
-    const intent = await stripe.value?.createPaymentMethod({
+    intent = await stripe.value?.createPaymentMethod({
       type: "card",
       card: cardField.value!,
       billing_details: {
@@ -67,7 +68,7 @@ async function stripePaymentMethodHandler(rslt: PaymentMethodResult, data: JSPO)
   }
 
   if (rslt.error) {
-    // showCardError(rslt.error.message);
+    sendFlash("could not complete subscription")
   } else {
     const params = sparams.value! as StripeParams;
     // create customer and subscribe.
@@ -95,7 +96,8 @@ async function stripePaymentMethodHandler(rslt: PaymentMethodResult, data: JSPO)
     if (!(subRslt as SubscriptionReply).ok) {
       let msg = (subRslt as SubscriptionReply).message;
       if (!msg) {
-        msg = (subRslt as { error: unknown }).error as string
+        const fetchErr = subRslt as FetchError;
+        msg = fetchErr.error;
       }
       throw new Error(msg);
     }

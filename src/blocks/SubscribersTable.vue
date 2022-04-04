@@ -50,7 +50,8 @@ import { format } from 'date-fns';
 import { Order, PaginatedRows } from '../types/accounts';
 import BaseTable from "../components/BaseTable.vue";
 import BaseBadge from "../components/BaseBadge.vue";
-import fetcher, { NewFetchParams } from "../utils/fetcher";
+import fetcher, { FetchError, NewFetchParams } from "../utils/fetcher";
+import { logoutUser } from "../logic/accounts";
 
 const pageSize = 3;
 
@@ -140,6 +141,7 @@ const pageChange = (page: number) => {
 }
 
 const updateSubs = async () => {
+  let data: PaginatedRows<Order> | FetchError;
   try {
     const uri = `${window.tmpVars.api}/api/auth/list-subs`;
     const params = NewFetchParams();
@@ -149,16 +151,30 @@ const updateSubs = async () => {
       page_size: pageSize,
     }
 
-    const data = await fetcher<PaginatedRows<Order>>(uri, params);
+    data = await fetcher<PaginatedRows<Order>>(uri, params);
     if (!data.error) {
       const { current_page, last_page, total_rows, rows } = data as PaginatedRows<Order>;
       subscriptions.value = rows;
       currentPage.value = current_page;
       lastPage.value = last_page;
       totalRows.value = total_rows;
+    } else {
+      console.log("fetch errored out");
+      const fe = data as FetchError;
+      console.log(fe.error);
+      logoutUser();
     }
 
   } catch (err) {
+    const fErr = data! as FetchError;
+    console.log("FE:", fErr);
+    if (fErr && fErr.status && fErr.status === 401) {
+      // auth expired.
+      location.href = "/logout";
+    } else {
+      console.log("err:", err);
+    }
+
     console.log(err);
   }
 

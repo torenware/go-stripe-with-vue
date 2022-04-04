@@ -18,6 +18,13 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      '/process-login': {
+        target: 'http://localhost:4000/',
+      },
+      '/logout': {
+        target: 'http://localhost:3000/',
+        rewrite: (path) => '/',
+      },
       '/api': {
         target: 'http://localhost:4001',
         changeOrigin: true,

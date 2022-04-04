@@ -12,14 +12,18 @@ type Payload = PagerData | JSPO;
 export type FetchParams = {
   method: string;
   payload?: Payload | null;
+  authenticate?: boolean;
+};
+
+export type FetchError = {
+  error: string;
+  status?: number;
 };
 
 export function NewFetchParams(payload = true) {
-  // Put in defaults
-  let defaultPayload: Payload;
-
   const params = {
     method: 'post',
+    authenticate: true,
   } as FetchParams;
 
   if (payload) {
@@ -35,19 +39,41 @@ export default async function fetcher<T>(api: string, params?: FetchParams) {
   if (!params) {
     params = NewFetchParams();
   }
-  const { token } = getTokenData() as AuthReply;
 
   // default assumes a paginated list
   let payload = params.payload;
+  // const headers = new Headers();
+  // headers.set('Accept', 'application/json');
+  // headers.set('Content-Type', 'application/json');
+  const headers: JSPO = {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  };
+  if (params.authenticate) {
+    const tokenData = getTokenData();
+    if (tokenData) {
+      const { token } = tokenData as AuthReply;
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.log('token data was unavailable');
+      return {
+        error: 'session is expired or not set',
+        status: 401,
+      };
+    }
+  }
+
+  // const processedHeaders: JSPO = {};
+  // headers.forEach((val, key) => {
+  //   processedHeaders[key] = val;
+  // });
 
   const requestOptions: RequestInit = {
     method: params.method,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
+    headers: headers as HeadersInit,
   };
+
+  console.log(requestOptions);
 
   if (['post', 'put'].includes(params.method.toLowerCase())) {
     try {
@@ -57,14 +83,18 @@ export default async function fetcher<T>(api: string, params?: FetchParams) {
     }
   }
 
+  // placating typescript here:
+  let rslt: Response = new Response();
   try {
-    const rslt = await fetch(api, requestOptions);
+    rslt = await fetch(api, requestOptions);
     const data = await rslt.json();
     return data as T;
   } catch (err) {
     console.log(err);
     return {
       error: err,
-    };
+      //@ts-ignore
+      status: rslt.status,
+    } as FetchError;
   }
 }
