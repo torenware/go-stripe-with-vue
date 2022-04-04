@@ -167,6 +167,9 @@
 
 
    {{ if not $vue }}
+    function showFlash(msg) {
+      Cookies.set("flash", msg);
+    }
 
     document.addEventListener("DOMContentLoaded", evt => {
       const flashVal = Cookies.get("flash");

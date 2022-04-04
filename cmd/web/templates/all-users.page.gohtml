@@ -35,7 +35,8 @@
 {{ end }}
 
 {{ define "js" }}
-    <script>
+    <script type="module">
+
         function LocalDate(dateStr) {
             const date = new Date(dateStr);
             return date.toLocaleDateString();
@@ -55,6 +56,12 @@
             }
             try {
                 const rslt = await fetch("{{ .API }}/api/auth/list-users", requestOptions);
+                if (rslt.status !== 200) {
+                    console.log("Fetch failed with an error:", rslt.status, rslt.statusText);
+                    window.showFlash(rslt.statusText);
+                    window.logoutUser();
+                    // throw new Error(rslt.statusText);
+                }
                 const data = await rslt.json();
                 rows = data.users;
                 const tbody = document.getElementById("user-rows");

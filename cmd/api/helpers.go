@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"runtime"
 
 	"github.com/torenware/go-stripe/internal/models"
 	"golang.org/x/crypto/bcrypt"
@@ -59,7 +60,12 @@ func (app *application) badRequest(w http.ResponseWriter, r *http.Request, err e
 
 	payload.Error = true
 	payload.Message = err.Error()
-	app.errorLog.Println(payload.Message)
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		app.errorLog.Println(payload.Message)
+	} else {
+		app.errorLog.Printf("%s from %s at line %d", payload.Message, file, line)
+	}
 
 	out, err := json.MarshalIndent(payload, "", "\t")
 	if err != nil {
