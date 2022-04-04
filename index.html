@@ -9,11 +9,12 @@
       const tmpVars = {};
       tmpVars.api = "http://localhost:4001";
       tmpVars.uid = 1;
+      tmpVars.dev = true;
       console.log("passed down", tmpVars);
       window.tmpVars = tmpVars;
 
       if (["/logout", "/process-login"].includes(location.pathname)) {
-        location.href = "/";
+        //location.href = "/";
       }
     </script>
   </head>

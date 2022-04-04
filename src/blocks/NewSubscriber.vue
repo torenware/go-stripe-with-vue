@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { ref, Ref, onMounted } from "vue";
-import { PaymentMethodResult, Stripe as StripeType, StripeCardElement } from "@stripe/stripe-js/types";
+import type { PaymentMethodResult, Stripe as StripeType, StripeCardElement } from "@stripe/stripe-js/types";
 import { loadStripe } from "@stripe/stripe-js";
 import fetcher, { NewFetchParams, FetchError } from "../utils/fetcher";
 import { sendFlash } from "../utils/flash";

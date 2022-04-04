@@ -51,5 +51,8 @@ export function logoutUser() {
   localStorage.removeItem('token');
   localStorage.removeItem('expiry');
   sendFlash('session expired!');
-  location.href = '/logout';
+  // prevent this redirect when on dev server.
+  if (!(window.tmpVars && window.tmpVars.dev)) {
+    location.href = '/logout';
+  }
 }
