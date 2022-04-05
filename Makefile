@@ -39,7 +39,7 @@ start: start_front start_back
 ## start_front: starts the front end
 start_front: build-js build_front
 	@echo "Starting the front end..."
-	@env STRIPE_KEY=${STRIPE_KEY} STRIPE_SECRET=${STRIPE_SECRET} ./dist/gostripe -port=${GOSTRIPE_PORT} &
+	@env STRIPE_KEY=${STRIPE_KEY} STRIPE_SECRET=${STRIPE_SECRET} ./dist/gostripe -port=${GOSTRIPE_PORT} -env="production" &
 	@echo "Front end running!"
 
 ## start_back: starts the back end
@@ -66,9 +66,9 @@ stop_back:
 	@-pkill -SIGTERM -f "gostripe_api -port=${API_PORT}"
 	@echo "Stopped back end"
 
-build-js:  vite.config.ts $(shell find src -type f -name '*.vue' -o -name '*.js' -o -name '*.ts')
+build-js:  frontend/vite.config.ts $(shell find frontend -type f -name '*.vue' -o -name '*.js' -o -name '*.ts')
 	@echo Rebuilding js front end code
 	@- rm -rf cmd/web/dist
-	@yarn build
+	@cd frontend; yarn build
 
 

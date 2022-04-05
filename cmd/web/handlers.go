@@ -334,7 +334,7 @@ func (app *application) BronzePlan(w http.ResponseWriter, r *http.Request) {
 	data := make(map[string]interface{})
 	data["widget"] = widget
 	tdata := templateData{
-		Data: data,
+		Data:    data,
 		VueGlue: app.vueglue,
 	}
 
@@ -509,8 +509,12 @@ func (app *application) AllUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) ShowUser(w http.ResponseWriter, r *http.Request) {
-	uid, err := strconv.Atoi(chi.URLParam(r, "id"))
+	uid, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	user, err := app.DB.GetUserByID(uid)
+	if err != nil {
+		app.clientError(w, http.StatusNotFound)
+		return
+	}
 	data := make(map[string]interface{})
 	data["user"] = user
 	td := templateData{
@@ -524,6 +528,10 @@ func (app *application) ShowUser(w http.ResponseWriter, r *http.Request) {
 func (app *application) EditUser(w http.ResponseWriter, r *http.Request) {
 	uid, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	user, err := app.DB.GetUserByID(uid)
+	if err != nil {
+		app.clientError(w, http.StatusNotFound)
+		return
+	}
 	data := make(map[string]interface{})
 	data["user"] = user
 	td := templateData{

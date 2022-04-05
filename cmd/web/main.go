@@ -78,6 +78,17 @@ func main() {
 
 	var config config
 
+	// temp examine dist
+	dir, err := dist.ReadDir(".")
+	if err != nil {
+		log.Println("could not read dir of embed", err)
+		return
+	}
+
+	for _, entry := range dir {
+		log.Println(entry.Name())
+	}
+
 	flag.IntVar(&config.port, "port", 4000, "Port number")
 	flag.StringVar(&config.env, "env", "development", "development|production")
 	flag.StringVar(&config.api, "api", "http://localhost:4001", "Base API URI")
@@ -107,7 +118,6 @@ func main() {
 	infoLog.Println("Database is UP")
 	defer conn.Close()
 
-
 	// crypto keys
 	config.secretkey = os.Getenv("SECRET_KEY")
 	if config.secretkey == "" {
@@ -134,11 +144,21 @@ func main() {
 		Session:       session,
 	}
 
-    // set up the Vue loader
-    glue, err := vueglue.NewVueGlue(dist, "dist")
-    app.vueglue = glue
+	// set up the Vue loader
+	vueConfig := &vueglue.ViteConfig{
+		Environment: config.env,
+		AssetsPath:  "dist",
+		URLPrefix:   "/assets/",
+		FS:          dist,
+	}
 
-    err = app.serve()
+	glue, err := vueglue.NewVueGlue(vueConfig)
+	if err != nil {
+		app.errorLog.Println("Vue did not initialize right")
+	}
+	app.vueglue = glue
+
+	err = app.serve()
 	if err != nil {
 		app.errorLog.Println(err)
 		log.Fatal()
