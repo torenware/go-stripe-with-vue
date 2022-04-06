@@ -4,7 +4,7 @@
 
 This repo contains my work on the main project of Trevor Sawler's Udemy course, [Building Web Applications with Go - Intermediate Level](https://www.udemy.com/course/building-web-applications-with-go-intermediate-level/learn/lecture/27168806#overview). The original course concentrates on using Go for an ecommerce application, and I recommend it.
 
-I'm posting this archive, however, because I've used the project course to investigate replacing its javascript with progressive enhancement using Vue 3. There's nothing wrong with Trever's javascript in the course, to be clear. He teaches how to code using plain javascript, sticking close to the standard APIs that all modern browsers implement. This is something any developer should know, or learn. 
+I'm posting this archive, however, because I've used the project course to investigate replacing its javascript with progressive enhancement using Vue 3. There's nothing wrong with Trevor's javascript in the course, to be clear. He teaches how to code using plain javascript, sticking close to the standard APIs that all modern browsers implement. This is something any developer should know, or learn. 
 
 But frameworks like Vue, React or Angular are great if a project starts getting large, since you can do elaborate things with the DOM in a very clear way. This is hard to do with the standard javascript APIs, since they take a lot more space to do things that are simple with the dynamic templates of these other libraries.
 
