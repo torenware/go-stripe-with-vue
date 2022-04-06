@@ -19,3 +19,14 @@ The app demonstrates:
 
 In all, the Vue pieces look a lot like the parts of the app that still use the original Go approaches, which is part of the point.
 
+## Starting Up The System
+
+Mostly this is just the app as built in the Udemy class, but a few things are necessary now that I've integrated Vue 3:
+
+1. I put settings into a `.env.local` file. This created problems using MySQL DSNs, so I build the DSN on the fly. Works fine, less trouble. A sample file is in the repo.
+2. `make start` builds the whole app, and embeds a production build of the Vue code. Building is slow, which is entirely on the Vue build process. The go apps run as `-env prodution`.
+3. `make start_dev` builds the go apps as usual, but runs them as `-env development`.  It also brings up the Vite dev server, which does hot updates. It is very fast, and a cool way to develop javascript.
+
+
+
+
