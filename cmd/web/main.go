@@ -46,6 +46,7 @@ type config struct {
 // receiver type
 type application struct {
 	config        config
+	vueConfig     *vueglue.ViteConfig
 	infoLog       *log.Logger
 	errorLog      *log.Logger
 	templateCache map[string]*template.Template
@@ -145,12 +146,25 @@ func main() {
 	}
 
 	// set up the Vue loader
-	vueConfig := &vueglue.ViteConfig{
-		Environment: config.env,
-		AssetsPath:  "dist",
-		URLPrefix:   "/assets/",
-		FS:          dist,
+	var vueConfig *vueglue.ViteConfig;
+	if config.env == "production" {
+		vueConfig = &vueglue.ViteConfig{
+			Environment: config.env,
+			AssetsPath:  "dist",
+			URLPrefix:   "/assets/",
+			FS:          dist,
+		}
+	} else {
+		// dev case
+		vueConfig = &vueglue.ViteConfig{
+			Environment: config.env,
+			AssetsPath:  "frontend",
+			URLPrefix:   "/src/",
+			FS:          os.DirFS("frontend"),
+			EntryPoint: "src/main.ts",
+		}
 	}
+	app.vueConfig = vueConfig
 
 	glue, err := vueglue.NewVueGlue(vueConfig)
 	if err != nil {

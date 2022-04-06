@@ -33,6 +33,8 @@ github.com/torenware/vite-go v0.0.12 h1:xb+V0c5zIcohWMNsXCDkRJUvPjo87/id3ohFlbTe
 github.com/torenware/vite-go v0.0.12/go.mod h1:tP33iI/kEQhR8TyowBjooxvp8kpHGA82eXuuI7apszc=
 github.com/torenware/vite-go v0.1.2 h1:Q5tc47HoFyabI/VG0USgBFEypuciJM6Fm8BapRM/SHQ=
 github.com/torenware/vite-go v0.1.2/go.mod h1:tP33iI/kEQhR8TyowBjooxvp8kpHGA82eXuuI7apszc=
+github.com/torenware/vite-go v0.1.3 h1:m8an2QwQvCfjCwXjMMoL3UtUcEKzdi/k4sQbRdfUJis=
+github.com/torenware/vite-go v0.1.3/go.mod h1:tP33iI/kEQhR8TyowBjooxvp8kpHGA82eXuuI7apszc=
 github.com/xhit/go-simple-mail/v2 v2.11.0 h1:o/056V50zfkO3Mm5tVdo9rG3ryg4ZmJ2XW5GMinHfVs=
 github.com/xhit/go-simple-mail/v2 v2.11.0/go.mod h1:b7P5ygho6SYE+VIqpxA6QkYfv4teeyG4MKqB3utRu98=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=

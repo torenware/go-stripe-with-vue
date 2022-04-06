@@ -11,7 +11,7 @@ VUE_PIECES := "src "
 # DSN=root@tcp(localhost:3306)/widgets?parseTime=true&tls=false
 
 ## build: builds all binaries
-build: clean build_front build_back
+build: clean build-js build_front build_back
 	@printf "All binaries built!\n"
 
 ## clean: cleans all binaries and runs go clean
@@ -42,6 +42,13 @@ start_front: build-js build_front
 	@env STRIPE_KEY=${STRIPE_KEY} STRIPE_SECRET=${STRIPE_SECRET} ./dist/gostripe -port=${GOSTRIPE_PORT} -env="production" &
 	@echo "Front end running!"
 
+start_dev: start_back build_front
+	@echo "Starting the front end in dev mode..."
+	@cd frontend; yarn dev &
+	@env STRIPE_KEY=${STRIPE_KEY} STRIPE_SECRET=${STRIPE_SECRET} ./dist/gostripe -port=${GOSTRIPE_PORT} -env="development" &
+	@echo "Front end running!"
+
+
 ## start_back: starts the back end
 start_back: build_back
 	@echo "Starting the back end..."
@@ -51,7 +58,7 @@ start_back: build_back
 	@echo "Back end running!"
 
 ## stop: stops the front and back end
-stop: stop_front stop_back
+stop: stop_front stop_back stop_dev
 	@echo "All applications stopped"
 
 ## stop_front: stops the front end
@@ -66,9 +73,15 @@ stop_back:
 	@-pkill -SIGTERM -f "gostripe_api -port=${API_PORT}"
 	@echo "Stopped back end"
 
+# @see https://stackoverflow.com/a/23258503/8600734
+# process gets title in vite.config.ts.
+stop_dev:
+	@echo "stop the Vite dev server"
+	@-pkill -SIGTERM -f "go_stripe_vite"
+
+
 build-js:  frontend/vite.config.ts $(shell find frontend -type f -name '*.vue' -o -name '*.js' -o -name '*.ts')
 	@echo Rebuilding js front end code
 	@- rm -rf cmd/web/dist
 	@cd frontend; yarn build
-
 
