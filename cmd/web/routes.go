@@ -1,59 +1,10 @@
 package main
 
 import (
-	"embed"
-	"io/fs"
-	"log"
 	"net/http"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
-
-func (app *application) GuardedFileServer(stripPrefix string, serveDir fs.FS) http.Handler {
-
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		var fileServer http.Handler
-		fileFS := serveDir
-		isEmbedded := false
-
-		if _, ok := serveDir.(embed.FS); ok {
-			fileFS, err = fs.Sub(serveDir, app.vueConfig.AssetsPath)
-			if err != nil {
-				log.Println("could not sub the FS", err)
-				http.NotFound(w, r)
-				return
-			}
-			isEmbedded = true
-		}
-		prefixLen := len(stripPrefix)
-		rest := r.URL.Path[prefixLen:]
-		// log.Println("via our file server:", rest)
-		parts := strings.Split(rest, "/")
-		// We want to prevent dot files from getting served.
-		if parts[len(parts)-1][:1] == "." {
-			//force a relative link.
-			log.Printf("Found dotfile or dir %s", parts[0])
-			http.NotFound(w, r)
-			return
-		}
-		if isEmbedded {
-			fileServer = http.FileServer(http.FS(fileFS))
-		} else {
-			fileServer = http.StripPrefix(stripPrefix, http.FileServer(http.FS(fileFS)))
-		}
-		fileServer.ServeHTTP(w, r)
-	}
-
-	return http.HandlerFunc(handler)
-}
-
-func (app *application) ServeVueAssets(mux *chi.Mux, prefix, stripPrefix string, serveDir fs.FS) error {
-	assetServer := app.GuardedFileServer(stripPrefix, serveDir)
-	mux.Handle(prefix + "*", assetServer)
-	return nil
-}
 
 
 func (app *application) routes() http.Handler {
@@ -98,9 +49,11 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./static/"))
 	mux.Handle("/static/*", http.StripPrefix("/static", fileServer))
 
-	err := app.ServeVueAssets(mux, app.vueConfig.URLPrefix, "/", app.vueConfig.FS)
+	assetServer, err := app.vueglue.FileServer()
 	if err != nil {
 		app.errorLog.Println(err)
 	}
+	mux.Handle(app.vueConfig.URLPrefix + "*", assetServer)
+
 	return mux
 }

@@ -44,7 +44,7 @@ start_front: build-js build_front
 
 start_dev: start_back build_front
 	@echo "Starting the front end in dev mode..."
-	@cd frontend; yarn dev &
+	@cd frontend; yarn dev
 	@env STRIPE_KEY=${STRIPE_KEY} STRIPE_SECRET=${STRIPE_SECRET} ./dist/gostripe -port=${GOSTRIPE_PORT} -env="development" &
 	@echo "Front end running!"
 

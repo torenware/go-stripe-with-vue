@@ -21,7 +21,7 @@ require (
 	github.com/alexedwards/scs/mysqlstore v0.0.0-20220216073957-c252878bcf5a
 	github.com/bwmarrin/go-alone v0.0.0-20190806015146-742bb55d1631
 	github.com/sethvargo/go-password v0.2.0
-	github.com/torenware/vite-go v0.1.3
+	github.com/torenware/vite-go v0.1.4
 	github.com/xhit/go-simple-mail/v2 v2.11.0
 )
 
